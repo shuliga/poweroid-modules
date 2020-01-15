@@ -14,7 +14,7 @@ class CircularBuffer {
 public:
     void reset();
     bool put(ParserModel &item);
-    ParserModel & poll();
+    ParserModel * poll();
     uint8_t length();
     bool isEmpty();
     bool isFull();

@@ -11,9 +11,8 @@
 
 class AtCommands {
 public:
-    AtCommands(Context *ctx);
+    explicit AtCommands(Context *ctx);
     const char * process(const char * atCommand);
-    bool strEndsWith(const char *str, const char *suffix);
 
 private:
     Context * ctx;
@@ -22,11 +21,11 @@ private:
 
     const char *getValue(const char *cmd);
 
-    bool startsWith(const char *_cmd, const char *pref);
-
     const char *setOrGetCtxValue(char *ctx_val, const char *value, unsigned char length);
 
     void persist();
+
+    bool setOrGetValue(bool *_val, const bool * new_val);
 };
 
 #endif //POWEROID_MODULES_ATCOMMANDS_H

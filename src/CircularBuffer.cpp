@@ -30,13 +30,13 @@ bool CircularBuffer::isFull() {
     return (head + 1) % BUFF_SIZE == tail;
 }
 
-ParserModel & CircularBuffer::poll() {
+ParserModel * CircularBuffer::poll() {
     ParserModel * result = NULL;
     if (!isEmpty()) {
         result =  &buffer[tail];
         tail = (tail + 1) % BUFF_SIZE;
     }
-    return *result;
+    return result;
 }
 
 bool CircularBuffer::put(ParserModel &item) {

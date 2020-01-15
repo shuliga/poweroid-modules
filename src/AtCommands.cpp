@@ -4,13 +4,18 @@
 
 #include "AtCommands.h"
 #include <Arduino.h>
+#include "Common.h"
 
 #define CMD_RESTART "RESTART"
 #define CMD_PERSIST "PERSIST"
+#define CMD_WIFI_CONNECT "WIFI_CONNECT"
+#define CMD_VERBOSE "VERBOSE"
+#define CMD_DEVICE_ID "DEVICE_ID"
 
 #define CMD_WIFI_INFO "WIFI_INFO"
 #define CMD_WIFI_PASS "WIFI_PASS"
 #define CMD_WIFI_SSID "WIFI_SSID"
+#define CMD_WIFI_CONNECTED "WIFI_CONNECTED"
 
 #define CMD_MQTT_INFO "MQTT_INFO"
 #define CMD_MQTT_USER "MQTT_USER"
@@ -20,6 +25,9 @@
 #define CMD_MQTT_ADDRESS "MQTT_ADDRESS"
 #define CMD_MQTT_SERVICE "MQTT_SERVICE"
 #define CMD_MQTT_CID "MQTT_CID"
+
+static const char *bool_values[2] = {"0", "1"};
+static bool bool_val;
 
 const char *AtCommands::process(const char *atCommand) {
     if (strcmp("AT", atCommand) == 0){
@@ -38,6 +46,22 @@ const char *AtCommands::process(const char *atCommand) {
             return "Config stored.";
         }
 
+        if(startsWith(cmd, CMD_WIFI_CONNECT)){
+            const char * val = getValue(cmd);
+            bool_val = val == NULL ? false : atoi(val);
+            return bool_values[setOrGetValue(&GLOBAL.connect, val == NULL ? NULL : &bool_val)];
+        }
+
+        if(startsWith(cmd, CMD_VERBOSE)){
+            const char * val = getValue(cmd);
+            bool_val = val == NULL ? false : atoi(val);
+            return bool_values[setOrGetValue(&GLOBAL.verbose, val == NULL ? NULL : &bool_val)];
+        }
+
+        if(startsWith(cmd, CMD_DEVICE_ID)){
+            return setOrGetCtxValue(ctx->device_id, getValue(cmd), CTX_LEN_DEVICE_ID);
+        }
+
         if(startsWith(cmd, CMD_WIFI_SSID)){
             return setOrGetCtxValue(ctx->wifi.ssid, getValue(cmd), CTX_LEN_WIFI_SSID);
         }
@@ -48,12 +72,17 @@ const char *AtCommands::process(const char *atCommand) {
             uint8_t size  =
                     strlen(ctx->wifi.pass) +
                     strlen(ctx->wifi.ssid) +
+                    1 +
                     strlen(CMD_WIFI_SSID) +
-                    strlen(CMD_WIFI_PASS) + 7;
+                    strlen(CMD_WIFI_PASS) +
+                    strlen(CMD_WIFI_CONNECTED) +
+                    3*3+1;
             char *info = new char[size];
-            sprintf(info, "%s: %s\n%s: %s",
+            sprintf(info, "%s: %s\n%s: %s\n%s: %s",
                     CMD_WIFI_SSID, ctx->wifi.ssid,
-                    CMD_WIFI_PASS, ctx->wifi.pass);
+                    CMD_WIFI_PASS, ctx->wifi.pass,
+                    CMD_WIFI_CONNECTED, bool_values[ctx->wifi.connected]
+                    );
             return info;
         }
 
@@ -71,7 +100,7 @@ const char *AtCommands::process(const char *atCommand) {
                     strlen(CMD_MQTT_PASS) +
                     strlen(CMD_MQTT_SERVICE) +
                     strlen(CMD_MQTT_ADDRESS) +
-                    18;
+                    3*6 + 1;
             char *info = new char[size];
             sprintf(info, "%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s",
                     CMD_MQTT_HOST, ctx->mqtt.host,
@@ -106,15 +135,6 @@ const char *AtCommands::process(const char *atCommand) {
     return NULL;
 }
 
-void AtCommands::restart() {
-    ESP.restart();
-}
-
-
-bool AtCommands::startsWith(const char * _cmd, const char * pref){
-    return strncmp(pref, _cmd, strlen(pref)) == 0;
-}
-
 const char * AtCommands::getValue(const char * _cmd){
     char * v = strchr(_cmd, '=');
     return v == NULL ? NULL : v + 1;
@@ -129,20 +149,17 @@ const char * AtCommands::setOrGetCtxValue(char *ctx_val, const char *value, uint
     return ctx_val;
 }
 
-bool  AtCommands::strEndsWith(const char * str, const char * suffix) {
-
-    if( str == NULL || suffix == NULL )
-        return 0;
-
-    size_t str_len = strlen(str);
-    size_t suffix_len = strlen(suffix);
-
-    if(suffix_len > str_len)
-        return 0;
-
-    return 0 == strncmp( str + str_len - suffix_len, suffix, suffix_len );
+bool AtCommands::setOrGetValue(bool *_val, const bool * new_val) {
+    if (new_val != NULL){
+        *_val = *new_val;
+    }
+    return *_val;
 }
 
 void AtCommands::persist() {
     storeContext(*ctx);
+}
+
+void AtCommands::restart() {
+    ESP.restart();
 }
