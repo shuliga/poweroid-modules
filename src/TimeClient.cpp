@@ -10,7 +10,7 @@ int8_t timeZone = 2;
 int8_t minutesTimeZone = 0;
 
 const char *ntpServer = "pool.ntp.org";
-static bool ready = false;
+static bool ready;
 
 TimeClient::TimeClient() {
     NTP.onNTPSyncEvent ([](NTPSyncEvent_t event) {
@@ -20,6 +20,7 @@ TimeClient::TimeClient() {
 }
 
 void TimeClient::begin() {
+    ready = false;
     NTP.setInterval(63);
     NTP.setNTPTimeout(NTP_TIMEOUT);
     NTP.begin(ntpServer, timeZone, true, minutesTimeZone);

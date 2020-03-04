@@ -38,10 +38,11 @@ void MqttProcessor::publish() {
             char payload[MODEL_VAL_LENGTH];
 
             if (MQTT_Parser.parseIn(*msg, path, payload)) {
+                buildPubTopic(*CTX, msg->device);
                 sprintf(target_topic, "%s/%s", CTX->pub_topic, path);
 
                 printToSerial("Sending OUT msg: ", target_topic, " | ", payload);
-                mqttClient->publish(target_topic, payload, strcmp(msg->type, MSG_TYPE_STATUS) == 0);
+                mqttClient->publish(target_topic, payload, strcmp(msg->type, MSG_TYPE_INIT) == 0);
             }
         }
     }

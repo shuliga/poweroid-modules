@@ -13,25 +13,19 @@ void printToSerial(const char * c1){
 
 void printToSerial(const char *c1, const char *c2) {
     if (GLOBAL.verbose){
-        Serial.print(c1);
-        Serial.println(c2);
+        Serial.printf("%s%s\r\n", c1, c2);
     }
 }
 
 void printToSerial(const char *c1, const char *c2, const char *c3) {
     if (GLOBAL.verbose){
-        Serial.print(c1);
-        Serial.print(c2);
-        Serial.println(c3);
+        Serial.printf("%s%s%s\r\n", c1, c2, c3);
     }
 }
 
 void printToSerial(const char *c1, const char *c2, const char *c3, const char *c4) {
     if (GLOBAL.verbose){
-        Serial.print(c1);
-        Serial.print(c2);
-        Serial.print(c3);
-        Serial.println(c4);
+        Serial.printf("%s%s%s%s\r\n", c1, c2, c3, c4);
     }
 }
 

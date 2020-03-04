@@ -26,6 +26,8 @@ private:
     void persist();
 
     bool setOrGetValue(bool *_val, const bool * new_val);
+
+    const char *processBool(const char *cmd, bool & traget);
 };
 
 #endif //POWEROID_MODULES_ATCOMMANDS_H

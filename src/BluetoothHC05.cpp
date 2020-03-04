@@ -4,12 +4,8 @@
 
 #include "BluetoothHC05.h"
 
-#define AT_COMMAND(C) if (!isOK(execAtCommand("AT+(C)"))) return false;
-#define AT_COMMAND2(C1,C2) if (!isOK(execAtCommand("AT+(C1)", (C2), 0 ))) return false;
-#define AT_RESPONSE(C,T) execAtCommand("AT+(C1)", NULL, (T));
-
 #define AT_SPEED 38400
-#define DEFAULT_TIMEOUT 250
+#define DEFAULT_TIMEOUT 300
 
 #define HC_05_VER_LEN 2
 static const char * HC_05_VER[HC_05_VER_LEN] = {"+VERSION:hc01.comV2.1","VERSION:3.0-20170609"};
@@ -23,55 +19,57 @@ bool BluetoothHC05::isHC05inAT() {
     return false;
 }
 
-bool BluetoothHC05::programAsSlave() {
-    AT_COMMAND(DISC)
-    AT_COMMAND(ORGL)
-    AT_COMMAND(RMAAD)
-    AT_COMMAND2(NAME=,"PWM-BMU-01")
-    AT_COMMAND2(PSWD=,"1234")
-    AT_COMMAND2(ROLE=,"0")
-    AT_COMMAND(RESET)
+bool BluetoothHC05::isInAt(){
+    return  isOK(execAtCommand("AT"));
+}
 
-    return true;
+bool BluetoothHC05::isInMasterMode(){
+    return execAtCommand("AT+ROLE?").startsWith("+ROLE:1");
+}
+
+bool BluetoothHC05::programAsSlave() {
+    execAtCommand("AT+DISC");
+    if (!isOK(execAtCommand("AT+ORGL"))) return false;
+    if (!isOK(execAtCommand("AT+RMAAD"))) return false;
+    if (!isOK(execAtCommand("AT+NAME=", DEVICE_ID, 0))) return false;
+    if (!isOK(execAtCommand("AT+PSWD=", "1234", 0))) return false;
+    if (!isOK(execAtCommand("AT+ROLE=", "0", 0))) return false;
+    char uart[11];
+    sprintf(uart, "%ld,1,0", serial_speed);
+    if (!isOK(execAtCommand("AT+UART=", uart, 0))) return false;
+    return isOK(execAtCommand("AT+RESET"));
+
 }
 
 bool BluetoothHC05::programAsMaster() {
-    AT_COMMAND(ORGL)
-    AT_COMMAND2(PIO=,"11,1")
-    AT_COMMAND(RMAAD)
-    AT_COMMAND2(NAME=, DEVICE_ID)
-    AT_COMMAND2(ROLE=,"1")
-    AT_COMMAND2(POLAR=,"1,0")
 
-    reset();
+    if (!isOK(execAtCommand("AT+ORGL"))) return false;
+    if (!isOK(execAtCommand("AT+PIO=", "11,1", 0))) return false;
+    if (!isOK(execAtCommand("AT+RMAAD"))) return false;
 
-    AT_COMMAND2(CMODE=,"0")
-    AT_COMMAND2(CLASS=,"1F00")
-    AT_COMMAND2(INQM=,"1,2,3")
+    if (!isOK(execAtCommand("AT+NAME=", DEVICE_ID, 0))) return false;
+    if (!isOK(execAtCommand("AT+ROLE=", "1", 0))) return false;
+    if (!isOK(execAtCommand("AT+POLAR=", "1,0", 0))) return false;
+
+    execAtCommand("AT+INIT", NULL, 500);
+
+    if (!isOK(execAtCommand("AT+CMODE=", "0", 0))) return false;
+    if (!isOK(execAtCommand("AT+CLASS=", "1F00", 0))) return false;
+    if (!isOK(execAtCommand("AT+INQM=", "1,2,3", 0))) return false;
 
     char uart[11];
     sprintf(uart, "%ld,1,0", serial_speed);
-    AT_COMMAND2(UART=,uart)
+    if (!isOK(execAtCommand("AT+UART=", uart, 0))) return false;
 
-    String device = AT_RESPONSE(+INQM,4000)
+    String device = execAtCommand("AT+INQ", NULL, 4000);
     if (device.startsWith("+INQ:")){
         String address =  device.substring(device.indexOf(':') + 1, device.indexOf(","));
         address.replace(':',',');
-        AT_COMMAND2(BIND=,address.c_str())
+        if (!isOK(execAtCommand("AT+PSWD=", "1234", 0))) return false;
+        if (!isOK(execAtCommand("AT+BIND=", address.c_str(), 0))) return false;
 
-        AT_COMMAND2(PSWD=,"1234")
-        AT_COMMAND2(POLAR=,"1,1")
-        reset();
-        AT_COMMAND2(POLAR=,"1,0")
+        if (!isOK(execAtCommand("AT+RESET"))) return false;
     }
-
-    return true;
-}
-
-bool BluetoothHC05::reset(){
-    AT_COMMAND(RESET)
-    delay(1000);
-    AT_COMMAND(INIT)
     return true;
 }
 
@@ -86,14 +84,13 @@ String BluetoothHC05::execAtCommand(const char *cmd) {
 String BluetoothHC05::execAtCommand(const char *cmd, const char *cmd2, unsigned long timeout) {
     pushCommand(cmd, cmd2, true);
 
-    Serial.setTimeout(timeout == 0 ? DEFAULT_TIMEOUT : timeout );
-
+    if(timeout != 0) delay(timeout);
     String res = Serial.readString();
+
     while(Serial.available()){
         Serial.readString();
     }
 
-    Serial.setTimeout(DEFAULT_TIMEOUT);
     return res;
 
 }
@@ -104,18 +101,23 @@ void BluetoothHC05::pushCommand(const char * cmd, const char *cmd2, bool crlf) {
         Serial.print(cmd2);
     if (crlf)
         Serial.println();
+    Serial.flush();
 }
 
 void BluetoothHC05::begin(long _serial_speed) {
     serial_speed = _serial_speed;
     Serial.flush();
     Serial.end();
+    Serial.setTimeout(DEFAULT_TIMEOUT);
     Serial.begin(AT_SPEED);
+    delay(250);
+    Serial.println();
 }
 
 void BluetoothHC05::end() {
     Serial.flush();
     Serial.end();
+    Serial.setTimeout(150);
     Serial.begin(serial_speed);
 }
 

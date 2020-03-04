@@ -18,6 +18,9 @@
 #define LED 2
 
 const char *DEVICE_ID = "PWM-BMU-01"; // Poweroid module, Bridge MQTT-UART
+char DEVICE_ID_MAC[34];
+
+unsigned long timestamp = 0;
 
 Context CTX;
 
@@ -30,21 +33,21 @@ AtCommands AT(&CTX);
 PoweroidProcessor pwrProcessor(&IN, &OUT, &CTX);
 MqttProcessor mqttProcessor(&IN, &OUT, &CTX, &mqttClient);
 
-bool initiated = false;
-
 void sendInitMessage();
 
-void printInfo();
+void printMQTTInfo();
 
 void testWiFiConnect();
 
 void loadContext();
 
-void timeSync(bool connected);
+void timeSync();
 
 void initBt();
 
 void cleanSerial();
+
+void processTimer();
 
 void mqtt_callback(char *topic, unsigned char *payload, unsigned int length) {
     mqttProcessor.process(topic, payload, length);
@@ -53,26 +56,22 @@ void mqtt_callback(char *topic, unsigned char *payload, unsigned int length) {
 void loadContext() {
     Serial.println("Loading context");
     loadContext(CTX);
-    buildPubTopic(CTX);
     buildSubTopic(CTX);
 }
 
-void printInfo() {
-    Serial.print("MQTT pub: ");
-    Serial.println(CTX.pub_topic);
-    Serial.print("MQTT sub: ");
-    Serial.println(CTX.sub_topic);
-    Serial.print("MQTT sub RAW: ");
-    Serial.println(CTX.sub_topic_raw);
+void printMQTTInfo() {
+    Serial.printf("MQTT sub: %s\r\n", CTX.sub_topic);
+    Serial.printf("MQTT sub RAW: %s\r\n", CTX.sub_topic_raw);
 }
 
-void sendInitMessage() {
+void sendInitMessage(const char * device_id) {
     ParserModel initMsg;
     initMsg.subject[0] = '\0';
-    char timestamp[20];
-    TIME.getTimestamp(timestamp);
-    sprintf(initMsg.value, "%s,%s", DEVICE_ID, timestamp);
+    char timestmp[20];
+    TIME.getTimestamp(timestmp);
+    sprintf(initMsg.value, "%s, %s", device_id, timestmp);
     strcpy(initMsg.type, MSG_TYPE_INIT);
+    strcpy(initMsg.device, DEVICE_ID);
     initMsg.idx = 0;
     OUT.put(initMsg);
 }
@@ -80,9 +79,13 @@ void sendInitMessage() {
 bool wiFiReconnect() {
     printToSerial("Connecting to ", CTX.wifi.ssid, "...");
     WiFi.begin(CTX.wifi.ssid, CTX.wifi.pass);
-    bool connected = WiFi.waitForConnectResult() == WL_CONNECTED;
+    bool connected = WiFi.waitForConnectResult();
     if (connected){
-        CTX.wifi.firstConnected = true;
+        GLOBAL.wifiFirstConnected = true;
+        GLOBAL.wifiConnected = true;
+        String mac = WiFi.macAddress();
+        mac.replace(":","-");
+        sprintf(DEVICE_ID_MAC, "%s-%s", DEVICE_ID, mac.c_str());
         printToSerial("WiFi connected");
     }
     return connected;
@@ -98,7 +101,33 @@ void processAT(const char *at_cmd) {
     }
 }
 
+bool processDeviceId() {
+    Serial.println("get_ver");
+    Serial.flush();
+    delay(350);
+    String resp = Serial.readStringUntil('\n');
+    while (Serial.available())
+        Serial.read();
+    if(resp.length() > 0){
+        String ver = resp.substring(resp.indexOf('>') + 2);
+        ver.replace(' ','_');
+        ver.replace('+','_');
+        ver.replace('#','_');
+        ver.replace(':','_');
+        ver.replace('\r','\0');
+        strncpy(CTX.uart.device_id, ver.c_str(), CTX_LEN_DEVICE_ID);
+        Serial.printf("PWR connected: %s\r\n", CTX.uart.device_id);
+        return true;
+    }
+    return false;
+}
+
 void processCommand() {
+    if (GLOBAL.master && !GLOBAL.uartConnected && GLOBAL.wifiConnected && GLOBAL.timer_5s){
+        GLOBAL.uartConnected = processDeviceId();
+        GLOBAL.subscribe = GLOBAL.uartConnected;
+        return;
+    }
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
         if (cmd.startsWith("AT")) {
@@ -113,38 +142,46 @@ void processCommand() {
 void processMqtt(PubSubClient &client) {
     if (!client.connected()) {
         printToSerial("Connecting to MQTT server...");
-        if (client.connect(CTX.device_id, CTX.mqtt.user, CTX.mqtt.pass)) {
+        if (client.connect(DEVICE_ID_MAC, CTX.mqtt.user, CTX.mqtt.pass)) {
             Serial.println("Connected to MQTT server");
-            client.subscribe(CTX.sub_topic);
-            client.subscribe(CTX.sub_topic_raw);
+            GLOBAL.subscribe = GLOBAL.uartConnected;
         } else {
             printToSerial("Could not connect to MQTT server");
         }
     }
 
     if (client.connected()) {
+        if (GLOBAL.subscribe){
+            client.unsubscribe(CTX.sub_topic);
+            client.unsubscribe(CTX.sub_topic_raw);
+            buildSubTopic(CTX);
+            client.subscribe(CTX.sub_topic);
+            client.subscribe(CTX.sub_topic_raw);
+            GLOBAL.subscribe = false;
+            printMQTTInfo();
+        }
         client.loop();
         mqttProcessor.publish();
     }
 }
 
 void testWiFiConnect() {
-    CTX.wifi.connected = WiFi.status() == WL_CONNECTED;
-//    digitalWrite(LED, CTX.wifi.connected ? HIGH : LOW);
+    GLOBAL.wifiConnected = WiFi.isConnected();
+    digitalWrite(LED, GLOBAL.wifiConnected ? HIGH : LOW);
 }
 
-void timeSync(bool connected) {
-    if (CTX.wifi.firstConnected) {
+void timeSync() {
+    if (GLOBAL.wifiFirstConnected) {
         TIME.begin();
-        CTX.wifi.firstConnected = false;
+        GLOBAL.wifiFirstConnected = false;
     }
-    if (connected && !initiated && TIME.isReady()) {
-        sendInitMessage();
-        initiated = true;
+    if ((GLOBAL.wifiConnected && !GLOBAL.initiated && TIME.isReady() && GLOBAL.subscribe) || (GLOBAL.initiated && GLOBAL.subscribe)) {
+        sendInitMessage(CTX.uart.device_id);
+        GLOBAL.initiated = true;
     }
-    if (!connected && initiated) {
+    if (!GLOBAL.wifiConnected && GLOBAL.initiated) {
         TIME.end();
-        initiated = false;
+        GLOBAL.initiated = false;
     }
 }
 
@@ -152,12 +189,18 @@ void initBt() {
     printToSerial("Testing BT connection");
     BluetoothHC05 BT(DEVICE_ID);
     BT.begin(CTX.uart.speed);
-//    bool proceedLink = BT.isHC05inAT();
-//    digitalWrite(LED, proceedLink ? LOW : HIGH);
-//    if (proceedLink){
-//        printToSerial("Connected BT module in AT mode found.\n\rPairing...");
-//    }
+    digitalWrite(LED, BT.isInAt() ? LOW : HIGH);
+    bool proceedLink = BT.isHC05inAT();
+    digitalWrite(LED, proceedLink ? LOW : HIGH);
+    if (proceedLink){
+        if(BT.isInMasterMode()){
+            BT.programAsSlave();
+        } else {
+            digitalWrite(LED, BT.programAsMaster() ? HIGH : LOW);
+        }
+    }
     BT.end();
+    printToSerial("\r\nTesting BT end");
 }
 
 void cleanSerial() {
@@ -165,46 +208,57 @@ void cleanSerial() {
         Serial.read();
 }
 
-void setup() {
+void processTimer() {
+    GLOBAL.timer_5s = false;
+    unsigned long current = millis();
+    if((current - ((current < timestamp) ? (timestamp - ULONG_MAX) : timestamp))  >= 5000L){
+        GLOBAL.timer_5s = true;
+        timestamp = current;
+    }
+}
 
-    Serial.begin(CTX.uart.speed);
+void setup() {
+    Serial.begin(115200);
     Serial.println();
 
     pinMode(LED, OUTPUT);
+    digitalWrite(LED, HIGH);
     delay(10);
 
     loadContext();
 
     initBt();
 
+    WiFi.disconnect();
+    WiFi.setAutoReconnect(true);
+
     mqttClient.setServer(CTX.mqtt.host, atoi(CTX.mqtt.port));
     mqttClient.setCallback(mqtt_callback);
 
-    printInfo();
-
     Serial.println("Bridge started.");
-
     cleanSerial();
+
+    timestamp = millis();
 }
 
 void loop() {
     testWiFiConnect();
 
-    timeSync(CTX.wifi.connected);
-
-    if (!CTX.wifi.connected && GLOBAL.connect && !wiFiReconnect())
+    if (!GLOBAL.wifiConnected && GLOBAL.connect && !wiFiReconnect())
         return;
 
     processCommand();
 
-    if (CTX.wifi.connected) {
-        if (!GLOBAL.connect) {
+    timeSync();
+
+    if (GLOBAL.wifiConnected) {
+        if (GLOBAL.connect) {
+            processMqtt(mqttClient);
+        } else {
             WiFi.disconnect();
             printToSerial("WiFi disconnected");
-        } else {
-            processMqtt(mqttClient);
         }
     }
 
+    processTimer();
 }
-

@@ -10,6 +10,7 @@
 #define CMD_PERSIST "PERSIST"
 #define CMD_WIFI_CONNECT "WIFI_CONNECT"
 #define CMD_VERBOSE "VERBOSE"
+#define CMD_MASTER "MASTER"
 #define CMD_DEVICE_ID "DEVICE_ID"
 
 #define CMD_WIFI_INFO "WIFI_INFO"
@@ -46,20 +47,20 @@ const char *AtCommands::process(const char *atCommand) {
             return "Config stored.";
         }
 
+        if(startsWith(cmd, CMD_MASTER)){
+            return processBool(cmd, GLOBAL.master);
+        }
+
         if(startsWith(cmd, CMD_WIFI_CONNECT)){
-            const char * val = getValue(cmd);
-            bool_val = val == NULL ? false : atoi(val);
-            return bool_values[setOrGetValue(&GLOBAL.connect, val == NULL ? NULL : &bool_val)];
+            return processBool(cmd, GLOBAL.connect);
         }
 
         if(startsWith(cmd, CMD_VERBOSE)){
-            const char * val = getValue(cmd);
-            bool_val = val == NULL ? false : atoi(val);
-            return bool_values[setOrGetValue(&GLOBAL.verbose, val == NULL ? NULL : &bool_val)];
+            return processBool(cmd, GLOBAL.verbose);
         }
 
         if(startsWith(cmd, CMD_DEVICE_ID)){
-            return setOrGetCtxValue(ctx->device_id, getValue(cmd), CTX_LEN_DEVICE_ID);
+            return setOrGetCtxValue(ctx->uart.device_id, getValue(cmd), CTX_LEN_DEVICE_ID);
         }
 
         if(startsWith(cmd, CMD_WIFI_SSID)){
@@ -81,7 +82,7 @@ const char *AtCommands::process(const char *atCommand) {
             sprintf(info, "%s: %s\n%s: %s\n%s: %s",
                     CMD_WIFI_SSID, ctx->wifi.ssid,
                     CMD_WIFI_PASS, ctx->wifi.pass,
-                    CMD_WIFI_CONNECTED, bool_values[ctx->wifi.connected]
+                    CMD_WIFI_CONNECTED, bool_values[GLOBAL.wifiConnected]
                     );
             return info;
         }
@@ -133,6 +134,12 @@ const char *AtCommands::process(const char *atCommand) {
 
     }
     return NULL;
+}
+
+const char* AtCommands::processBool(const char * cmd, bool & target){
+    const char * val = getValue(cmd);
+    bool_val = val == NULL ? false : atoi(val);
+    return bool_values[setOrGetValue(&target, val == NULL ? NULL : &bool_val)];
 }
 
 const char * AtCommands::getValue(const char * _cmd){

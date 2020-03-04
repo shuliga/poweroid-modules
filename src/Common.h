@@ -10,6 +10,13 @@
 struct Global {
     bool connect = true;
     bool verbose = true;
+    bool master = true;
+    bool uartConnected = false;
+    bool wifiConnected = false;
+    bool wifiFirstConnected = false;
+    bool initiated = false;
+    bool subscribe = true;
+    bool timer_5s = false;
 };
 
 extern Global GLOBAL;

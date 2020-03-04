@@ -11,7 +11,9 @@ class BluetoothHC05 {
 public:
     explicit BluetoothHC05(const char *deviceId);
 
+    bool isInAt();
     bool isHC05inAT();
+    bool isInMasterMode();
     bool programAsSlave();
     bool programAsMaster();
 
