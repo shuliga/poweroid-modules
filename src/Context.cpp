@@ -18,6 +18,8 @@ const char *mqtt_pass = "ThermoPass";
 
 const char *service = "rent";
 
+size_t eepromSize(const Context &ctx);
+
 const int uart_baud = 115200;
 
 void loadDefaultContext(Context &ctx) {
@@ -36,17 +38,21 @@ void loadDefaultContext(Context &ctx) {
 }
 
 void loadContext(Context &ctx) {
-    EEPROM.begin(sizeof(ctx));
+    EEPROM.begin(eepromSize(ctx));
     EEPROM.get(0, ctx);
+    unsigned long checksum;
+    EEPROM.get(sizeof(ctx), checksum);
     EEPROM.end();
-    if (ctx.checksum != hash(ctx)) {
+    if (checksum != hash(ctx)) {
         loadDefaultContext(ctx);
         Serial.println("Checksum error. Default context loaded.");
     }
 }
 
+size_t eepromSize(const Context &ctx) { return sizeof(ctx) + sizeof(long); }
+
 void resetEepromContext(Context &ctx) {
-    EEPROM.begin(sizeof(ctx));
+    EEPROM.begin(eepromSize(ctx));
     for (unsigned long a = 0; a < sizeof(ctx); a++) {
         EEPROM.write(a, 0);
     }
@@ -54,9 +60,10 @@ void resetEepromContext(Context &ctx) {
 }
 
 void storeContext(Context &ctx) {
-    EEPROM.begin(sizeof(ctx));
-    ctx.checksum = hash(ctx);
+    EEPROM.begin(eepromSize(ctx));
+    unsigned long checksum = hash(ctx);
     EEPROM.put(0, ctx);
+    EEPROM.put(sizeof(ctx), checksum);
     EEPROM.commit();
 }
 

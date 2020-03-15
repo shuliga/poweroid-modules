@@ -37,17 +37,21 @@ void sendInitMessage();
 
 void printMQTTInfo();
 
-void testWiFiConnect();
+void testConnect();
 
 void loadContext();
 
-void timeSync();
+void syncTimeAndStates();
 
 void initBt();
 
 void cleanSerial();
 
 void processTimer();
+
+void mqttTryConnect(PubSubClient &client);
+
+void mqttSubscribe(PubSubClient &client);
 
 void mqtt_callback(char *topic, unsigned char *payload, unsigned int length) {
     mqttProcessor.process(topic, payload, length);
@@ -81,12 +85,14 @@ bool wiFiReconnect() {
     WiFi.begin(CTX.wifi.ssid, CTX.wifi.pass);
     bool connected = WiFi.waitForConnectResult();
     if (connected){
-        GLOBAL.wifiFirstConnected = true;
-        GLOBAL.wifiConnected = true;
+        GLOBAL.cmd.wifiConnected = true;
+        GLOBAL.status.wifiConnected = true;
         String mac = WiFi.macAddress();
         mac.replace(":","-");
         sprintf(DEVICE_ID_MAC, "%s-%s", DEVICE_ID, mac.c_str());
         printToSerial("WiFi connected");
+    } else {
+        GLOBAL.status.wifiConnected = false;
     }
     return connected;
 }
@@ -123,9 +129,9 @@ bool processDeviceId() {
 }
 
 void processCommand() {
-    if (GLOBAL.master && !GLOBAL.uartConnected && GLOBAL.wifiConnected && GLOBAL.timer_5s){
-        GLOBAL.uartConnected = processDeviceId();
-        GLOBAL.subscribe = GLOBAL.uartConnected;
+    if (GLOBAL.flag.master && GLOBAL.status.wifiConnected && !GLOBAL.status.uartConnected && GLOBAL.status.timer_5s){
+        GLOBAL.status.uartConnected = processDeviceId();
+        GLOBAL.cmd.uartConnected = GLOBAL.status.uartConnected;
         return;
     }
     if (Serial.available()) {
@@ -139,54 +145,79 @@ void processCommand() {
     pwrProcessor.processIn();
 }
 
-void processMqtt(PubSubClient &client) {
-    if (!client.connected()) {
-        printToSerial("Connecting to MQTT server...");
-        if (client.connect(DEVICE_ID_MAC, CTX.mqtt.user, CTX.mqtt.pass)) {
-            Serial.println("Connected to MQTT server");
-            GLOBAL.subscribe = GLOBAL.uartConnected;
-        } else {
-            printToSerial("Could not connect to MQTT server");
+void mqttProcess(PubSubClient &client) {
+    if (GLOBAL.status.mqttConnected) {
+        if (GLOBAL.cmd.subscribe) {
+            mqttSubscribe(client);
+            GLOBAL.cmd.subscribe = false;
         }
-    }
-
-    if (client.connected()) {
-        if (GLOBAL.subscribe){
-            client.unsubscribe(CTX.sub_topic);
-            client.unsubscribe(CTX.sub_topic_raw);
-            buildSubTopic(CTX);
-            client.subscribe(CTX.sub_topic);
-            client.subscribe(CTX.sub_topic_raw);
-            GLOBAL.subscribe = false;
-            printMQTTInfo();
+        if (GLOBAL.cmd.initiate){
+            sendInitMessage(CTX.uart.device_id);
+            GLOBAL.cmd.initiate = false;
         }
         client.loop();
         mqttProcessor.publish();
+    } else {
+        mqttTryConnect(client);
     }
 }
 
-void testWiFiConnect() {
-    GLOBAL.wifiConnected = WiFi.isConnected();
-    digitalWrite(LED, GLOBAL.wifiConnected ? HIGH : LOW);
+void mqttSubscribe(PubSubClient &client) {
+    client.unsubscribe(CTX.sub_topic);
+    client.unsubscribe(CTX.sub_topic_raw);
+    buildSubTopic(CTX);
+    client.subscribe(CTX.sub_topic);
+    client.subscribe(CTX.sub_topic_raw);
+    printMQTTInfo();
 }
 
-void timeSync() {
-    if (GLOBAL.wifiFirstConnected) {
+void mqttTryConnect(PubSubClient &client) {
+    printToSerial("Connecting to MQTT server...");
+    if (client.connect(DEVICE_ID_MAC, CTX.mqtt.user, CTX.mqtt.pass)) {
+        Serial.println("Connected to MQTT server");
+        GLOBAL.cmd.subscribe = true;
+        GLOBAL.status.mqttConnected = true;
+    } else {
+        GLOBAL.status.mqttConnected = false;
+        printToSerial("Could not connect to MQTT server");
+    }
+}
+
+void testConnect() {
+    GLOBAL.status.wifiConnected = WiFi.isConnected();
+    digitalWrite(LED, GLOBAL.status.wifiConnected ? HIGH : LOW);
+    if (GLOBAL.status.wifiConnected && GLOBAL.status.timer_5s) {
+        GLOBAL.status.mqttConnected = mqttClient.connected();
+    }
+}
+
+void syncTimeAndStates() {
+    if (GLOBAL.cmd.wifiConnected) {
         TIME.begin();
-        GLOBAL.wifiFirstConnected = false;
+        GLOBAL.cmd.wifiConnected = false;
     }
-    if ((GLOBAL.wifiConnected && !GLOBAL.initiated && TIME.isReady() && GLOBAL.subscribe) || (GLOBAL.initiated && GLOBAL.subscribe)) {
-        sendInitMessage(CTX.uart.device_id);
-        GLOBAL.initiated = true;
+
+    if(GLOBAL.status.wifiConnected && GLOBAL.status.mqttConnected){
+        if(GLOBAL.cmd.uartConnected || GLOBAL.cmd.mqttConnected) {
+            GLOBAL.cmd.subscribe = true;
+            GLOBAL.cmd.uartConnected = false;
+            GLOBAL.cmd.mqttConnected = false;
+        }
     }
-    if (!GLOBAL.wifiConnected && GLOBAL.initiated) {
+
+    if ((!GLOBAL.status.initiated && GLOBAL.status.wifiConnected && TIME.isReady() && GLOBAL.cmd.subscribe) || (GLOBAL.status.initiated && GLOBAL.cmd.subscribe)) {
+        GLOBAL.status.initiated = true;
+        GLOBAL.cmd.initiate = true;
+    }
+
+    if (!GLOBAL.status.wifiConnected && GLOBAL.status.initiated) {
         TIME.end();
-        GLOBAL.initiated = false;
+        GLOBAL.status.initiated = false;
     }
 }
 
 void initBt() {
-    printToSerial("Testing BT connection");
+    printToSerial("Testing BT connection at ", CTX.uart.speed);
     BluetoothHC05 BT(DEVICE_ID);
     BT.begin(CTX.uart.speed);
     digitalWrite(LED, BT.isInAt() ? LOW : HIGH);
@@ -209,10 +240,10 @@ void cleanSerial() {
 }
 
 void processTimer() {
-    GLOBAL.timer_5s = false;
+    GLOBAL.status.timer_5s = false;
     unsigned long current = millis();
     if((current - ((current < timestamp) ? (timestamp - ULONG_MAX) : timestamp))  >= 5000L){
-        GLOBAL.timer_5s = true;
+        GLOBAL.status.timer_5s = true;
         timestamp = current;
     }
 }
@@ -242,18 +273,18 @@ void setup() {
 }
 
 void loop() {
-    testWiFiConnect();
+    testConnect();
 
-    if (!GLOBAL.wifiConnected && GLOBAL.connect && !wiFiReconnect())
+    if (!GLOBAL.status.wifiConnected && GLOBAL.flag.connect && !wiFiReconnect())
         return;
 
     processCommand();
 
-    timeSync();
+    syncTimeAndStates();
 
-    if (GLOBAL.wifiConnected) {
-        if (GLOBAL.connect) {
-            processMqtt(mqttClient);
+    if (GLOBAL.status.wifiConnected) {
+        if (GLOBAL.flag.connect) {
+            mqttProcess(mqttClient);
         } else {
             WiFi.disconnect();
             printToSerial("WiFi disconnected");

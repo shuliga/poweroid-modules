@@ -25,6 +25,7 @@
 #define CMD_MQTT_PASS "MQTT_PASS"
 #define CMD_MQTT_ADDRESS "MQTT_ADDRESS"
 #define CMD_MQTT_SERVICE "MQTT_SERVICE"
+#define CMD_MQTT_CONNECTED "MQTT_CONNECTED"
 #define CMD_MQTT_CID "MQTT_CID"
 
 static const char *bool_values[2] = {"0", "1"};
@@ -48,15 +49,15 @@ const char *AtCommands::process(const char *atCommand) {
         }
 
         if(startsWith(cmd, CMD_MASTER)){
-            return processBool(cmd, GLOBAL.master);
+            return processBool(cmd, GLOBAL.flag.master);
         }
 
         if(startsWith(cmd, CMD_WIFI_CONNECT)){
-            return processBool(cmd, GLOBAL.connect);
+            return processBool(cmd, GLOBAL.flag.connect);
         }
 
         if(startsWith(cmd, CMD_VERBOSE)){
-            return processBool(cmd, GLOBAL.verbose);
+            return processBool(cmd, GLOBAL.flag.verbose);
         }
 
         if(startsWith(cmd, CMD_DEVICE_ID)){
@@ -82,7 +83,7 @@ const char *AtCommands::process(const char *atCommand) {
             sprintf(info, "%s: %s\n%s: %s\n%s: %s",
                     CMD_WIFI_SSID, ctx->wifi.ssid,
                     CMD_WIFI_PASS, ctx->wifi.pass,
-                    CMD_WIFI_CONNECTED, bool_values[GLOBAL.wifiConnected]
+                    CMD_WIFI_CONNECTED, bool_values[GLOBAL.status.wifiConnected]
                     );
             return info;
         }
@@ -95,13 +96,15 @@ const char *AtCommands::process(const char *atCommand) {
                     strlen(ctx->mqtt.pass) +
                     strlen(ctx->mqtt.service) +
                     strlen(ctx->mqtt.address) +
+                    1 +
                     strlen(CMD_MQTT_HOST) +
                     strlen(CMD_MQTT_PORT) +
                     strlen(CMD_MQTT_USER) +
                     strlen(CMD_MQTT_PASS) +
                     strlen(CMD_MQTT_SERVICE) +
                     strlen(CMD_MQTT_ADDRESS) +
-                    3*6 + 1;
+                    strlen(CMD_MQTT_ADDRESS) +
+                    3*7 + 1;
             char *info = new char[size];
             sprintf(info, "%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s",
                     CMD_MQTT_HOST, ctx->mqtt.host,
@@ -109,8 +112,9 @@ const char *AtCommands::process(const char *atCommand) {
                     CMD_MQTT_USER, ctx->mqtt.user,
                     CMD_MQTT_PASS, ctx->mqtt.pass,
                     CMD_MQTT_SERVICE, ctx->mqtt.service,
-                    CMD_MQTT_ADDRESS, ctx->mqtt.address
-                    );
+                    CMD_MQTT_ADDRESS, ctx->mqtt.address,
+                    CMD_MQTT_CONNECTED, bool_values[GLOBAL.status.mqttConnected]
+            );
             return info;
         }
         if(startsWith(cmd, CMD_MQTT_HOST)){

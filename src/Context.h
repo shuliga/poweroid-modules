@@ -55,8 +55,6 @@ struct Context {
     WiFiContext wifi;
     UartContext uart;
 
-    unsigned long checksum;
-
 };
 
 void loadDefaultContext(Context &ctx);

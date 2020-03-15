@@ -36,7 +36,7 @@ void TimeClient::getTimestamp(char * timestamp) {
 
 void TimeClient::end() {
     NTP.stop();
-
+    ready = false;
 }
 
 TimeClient TIME;

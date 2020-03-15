@@ -7,24 +7,30 @@
 Global GLOBAL;
 
 void printToSerial(const char * c1){
-    if (GLOBAL.verbose)
+    if (GLOBAL.flag.verbose)
         Serial.println(c1);
 }
 
 void printToSerial(const char *c1, const char *c2) {
-    if (GLOBAL.verbose){
+    if (GLOBAL.flag.verbose){
         Serial.printf("%s%s\r\n", c1, c2);
     }
 }
 
+void printToSerial(const char *c1, int i) {
+    if (GLOBAL.flag.verbose){
+        Serial.printf("%s %d\r\n", c1, i);
+    }
+}
+
 void printToSerial(const char *c1, const char *c2, const char *c3) {
-    if (GLOBAL.verbose){
+    if (GLOBAL.flag.verbose){
         Serial.printf("%s%s%s\r\n", c1, c2, c3);
     }
 }
 
 void printToSerial(const char *c1, const char *c2, const char *c3, const char *c4) {
-    if (GLOBAL.verbose){
+    if (GLOBAL.flag.verbose){
         Serial.printf("%s%s%s%s\r\n", c1, c2, c3, c4);
     }
 }
