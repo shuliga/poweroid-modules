@@ -158,7 +158,8 @@ void mqttProcess(PubSubClient &client) {
         client.loop();
         mqttProcessor.publish();
     } else {
-        mqttTryConnect(client);
+        if (GLOBAL.status.timer_5s)
+            mqttTryConnect(client);
     }
 }
 
@@ -172,20 +173,20 @@ void mqttSubscribe(PubSubClient &client) {
 }
 
 void mqttTryConnect(PubSubClient &client) {
-    printToSerial("Connecting to MQTT server...");
+    Serial.printf("Connecting to MQTT server %s:%s, device=%s, user=%s, pass=%s\n", CTX.mqtt.host, CTX.mqtt.port, DEVICE_ID_MAC, CTX.mqtt.user, CTX.mqtt.pass);
     if (client.connect(DEVICE_ID_MAC, CTX.mqtt.user, CTX.mqtt.pass)) {
         Serial.println("Connected to MQTT server");
         GLOBAL.cmd.subscribe = true;
         GLOBAL.status.mqttConnected = true;
     } else {
         GLOBAL.status.mqttConnected = false;
-        printToSerial("Could not connect to MQTT server");
+        Serial.println("Could not connect to MQTT server");
     }
 }
 
 void testConnect() {
     GLOBAL.status.wifiConnected = WiFi.isConnected();
-    digitalWrite(LED, GLOBAL.status.wifiConnected ? HIGH : LOW);
+    digitalWrite(LED, GLOBAL.status.wifiConnected ? GLOBAL.status.mqttConnected ? HIGH : GLOBAL.status.timer_2Hz % 2 : LOW);
     if (GLOBAL.status.wifiConnected && GLOBAL.status.timer_5s) {
         GLOBAL.status.mqttConnected = mqttClient.connected();
     }
@@ -242,9 +243,10 @@ void cleanSerial() {
 void processTimer() {
     GLOBAL.status.timer_5s = false;
     unsigned long current = millis();
-    if((current - ((current < timestamp) ? (timestamp - ULONG_MAX) : timestamp))  >= 5000L){
-        GLOBAL.status.timer_5s = true;
+    if((current - ((current < timestamp) ? (timestamp - ULONG_MAX) : timestamp))  >= 500L){
+        GLOBAL.status.timer_2Hz++;
         timestamp = current;
+        GLOBAL.status.timer_5s = !(GLOBAL.status.timer_2Hz % 10);
     }
 }
 

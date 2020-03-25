@@ -20,6 +20,7 @@ struct Status {
     bool wifiConnected = false;
     bool mqttConnected = false;
     bool initiated = false;
+    unsigned long timer_2Hz = 0;
     bool timer_5s = false;
 };
 
