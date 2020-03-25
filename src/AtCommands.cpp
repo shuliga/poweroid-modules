@@ -106,7 +106,7 @@ const char *AtCommands::process(const char *atCommand) {
                     strlen(CMD_MQTT_ADDRESS) +
                     3*7 + 1;
             char *info = new char[size];
-            sprintf(info, "%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s",
+            sprintf(info, "%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s",
                     CMD_MQTT_HOST, ctx->mqtt.host,
                     CMD_MQTT_PORT, ctx->mqtt.port,
                     CMD_MQTT_USER, ctx->mqtt.user,
