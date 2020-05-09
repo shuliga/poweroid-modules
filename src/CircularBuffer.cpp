@@ -39,6 +39,14 @@ ParserModel * CircularBuffer::poll() {
     return result;
 }
 
+ParserModel * CircularBuffer::peek() {
+    ParserModel * result = NULL;
+    if (!isEmpty()) {
+        result =  &buffer[tail];
+    }
+    return result;
+}
+
 bool CircularBuffer::put(ParserModel &item) {
     bool overflow = false;
     if (isFull()){

@@ -12,10 +12,11 @@
 class AtCommands {
 public:
     explicit AtCommands(Context *ctx);
-    const char * process(const char * atCommand);
+
+    const char **process(const char *atCommand);
 
 private:
-    Context * ctx;
+    Context *ctx;
 
     void restart();
 
@@ -27,7 +28,14 @@ private:
 
     bool setOrGetValue(bool *_val, const bool * new_val);
 
-    const char *processBool(const char *cmd, bool & traget);
-};
+    const char *processBool(const char *cmd, bool &traget);
 
+    const char **cmdGet(const char *cmd, const char *result);
+
+    const char **cmdSet(const char *cmd, const char *result);
+
+    const char **getInfo(char *result);
+
+    const char **cmdSetOrGet(const char *cmd, const char *val, const char *result);
+};
 #endif //POWEROID_MODULES_ATCOMMANDS_H

@@ -41,8 +41,8 @@ void MqttProcessor::publish() {
                 buildPubTopic(*CTX, msg->device);
                 sprintf(target_topic, "%s/%s", CTX->pub_topic, path);
 
-                printToSerial("Sending OUT msg: ", target_topic, " | ", payload);
-                mqttClient->publish(target_topic, payload, strcmp(msg->type, MSG_TYPE_INIT) == 0);
+                printToSerial("MQTT: sending OUT msg: ", target_topic, " | ", payload);
+                mqttClient->publish(target_topic, payload, msg->retained);
             }
         }
     }

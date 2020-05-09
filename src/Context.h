@@ -49,6 +49,7 @@ struct Context {
     char pub_topic[CTX_LEN_TOPIC + 1];
     char sub_topic[CTX_LEN_TOPIC + 1];
     char sub_topic_raw[CTX_LEN_TOPIC + 1];
+    char sub_topic_exec_at[CTX_LEN_TOPIC + 1];
     char sub_path[CTX_LEN_TOPIC + 1];
 
     MqttConext mqtt;
@@ -61,7 +62,7 @@ void loadDefaultContext(Context &ctx);
 void storeContext(Context &ctx);
 void loadContext(Context &ctx);
 void resetEepromContext(Context &ctx);
-void buildSubTopic(Context &ctx);
+void buildSubTopic(Context &ctx, const char * device_id);
 void buildPubTopic(Context &ctx);
 void buildPubTopic(Context &ctx, const char * device_id);
 unsigned long hash(Context &ctx);

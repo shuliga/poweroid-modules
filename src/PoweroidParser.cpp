@@ -6,6 +6,8 @@
 #include "PoweroidParser.h"
 
 static const char * cmd_divider = " -> ";
+static const char * SETTER_PATTERN = "%s_%s_%d:%s";
+static const char * GETTER_PATTERN = "%s_%s_%d";
 
 bool PoweroidParser::parseOut(const String &input, ParserModel &parsed) {
     int8_t divider_start = input.indexOf(cmd_divider);
@@ -49,18 +51,22 @@ bool PoweroidParser::parseOut(const String &input, ParserModel &parsed) {
 
 bool PoweroidParser::parseIn(ParserModel &input, char * parsed) {
     if (strcmp(input.subject, SUBJ_PROP) == 0){
-        if(strcmp(input.mode, MODE_SET) == 0){
-            sprintf(parsed, "%s_%s_%d:%s", input.mode, input.subject, input.idx, input.value);
+        if(strcmp(input.mode, ACTION_SET) == 0){
+            sprintf(parsed, SETTER_PATTERN, input.mode, input.subject, input.idx, input.value);
             return true;
         }
-        if(strcmp(input.mode, MODE_GET) == 0){
-            sprintf(parsed, "%s_%s_%d", input.mode, input.subject, input.idx);
+        if(strcmp(input.mode, ACTION_GET) == 0){
+            sprintf(parsed, GETTER_PATTERN, input.mode, input.subject, input.idx);
             return true;
         }
     }
     if (strcmp(input.subject, SUBJ_STATE) == 0){
-        if(strcmp(input.mode, MODE_DISARM) == 0){
-            sprintf(parsed, "%s_%s_%d:%s", input.mode, input.subject, input.idx, input.value);
+        if(strcmp(input.mode, ACTION_DISARM) == 0){
+            sprintf(parsed, SETTER_PATTERN, input.mode, input.subject, input.idx, input.value);
+            return true;
+        }
+        if(strcmp(input.mode, ACTION_GET) == 0){
+            sprintf(parsed, GETTER_PATTERN, input.mode, input.subject, input.idx);
             return true;
         }
     }

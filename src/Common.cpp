@@ -35,6 +35,50 @@ void printToSerial(const char *c1, const char *c2, const char *c3, const char *c
     }
 }
 
+uint8_t splitStr(char *split, const char *src, const char divider) {
+    uint8_t z = 1;
+    strcpy(split, src);
+    for (uint8_t i = 0; i < strlen(src); i++) {
+        if (split[i] == divider) {
+            split[i] = '\0';
+            z++;
+        }
+    }
+    return z;
+}
+
+uint8_t splitLines(char *lines) {
+    uint8_t n = 1;
+    uint8_t z = 0;
+    for (uint8_t i = 0; i < strlen(lines); i++) {
+        if (lines[i] == '\r' || lines[i] == '\n') {
+            lines[i] = '\0';
+            z++;
+        } else {
+            if (z != 0) {
+                n++;
+            }
+            z = 0;
+        }
+    }
+    return n;
+}
+
+char *getItemBackwards(char *split, uint8_t size, uint8_t idx) {
+    uint8_t z = 0;
+    for (uint8_t i = size - 1; i >= 0; i--) {
+        if (split[i] == '\0' || i == 0) {
+            z++;
+        }
+        if (z == idx) {
+            return &split[i] + (i == 0 ? 0 : 1);
+        }
+    }
+    return NULL;
+}
+
+
+
 bool strEndsWith(const char * str, const char * suffix) {
 
     if( str == NULL || suffix == NULL )

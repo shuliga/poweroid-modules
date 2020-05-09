@@ -6,7 +6,8 @@
 #include "Context.h"
 #include "ParserConstants.h"
 
-const char *address = "ua-lv-79004-nv-7-4";
+// Address pattern: <country code #2>-<City code #2>-<postal code>-<street code #2>-<building no.>-<apt. no.>
+const char *address = "ua-test";
 
 const char *ssid = "SHL-Net-2";
 const char *pass = "76543210";
@@ -32,9 +33,6 @@ void loadDefaultContext(Context &ctx) {
 
     strcpy(ctx.wifi.ssid, ssid);
     strcpy(ctx.wifi.pass, pass);
-
-    strcpy(ctx.uart.device_id, DEFAULT_PWR_DEVICE_ID);
-    ctx.uart.speed = uart_baud;
 }
 
 void loadContext(Context &ctx) {
@@ -43,6 +41,8 @@ void loadContext(Context &ctx) {
     unsigned long checksum;
     EEPROM.get(sizeof(ctx), checksum);
     EEPROM.end();
+    strcpy(ctx.uart.device_id, DEFAULT_PWR_DEVICE_ID);
+    ctx.uart.speed = uart_baud;
     if (checksum != hash(ctx)) {
         loadDefaultContext(ctx);
         Serial.println("Checksum error. Default context loaded.");
@@ -67,10 +67,11 @@ void storeContext(Context &ctx) {
     EEPROM.commit();
 }
 
-void buildSubTopic(Context &ctx) {
-    sprintf(ctx.sub_path, "%s/%s/%s", ctx.mqtt.service, ctx.mqtt.address, ctx.uart.device_id);
-    sprintf(ctx.sub_topic, "%s/%s/#", ctx.sub_path, MSG_TYPE_CMD);
-    sprintf(ctx.sub_topic_raw, "%s/%s/#", ctx.sub_path, MSG_TYPE_IN);
+void buildSubTopic(Context &ctx, const char *device_id) {
+    sprintf(ctx.sub_path, "%s/%s", ctx.mqtt.service, ctx.mqtt.address);
+    sprintf(ctx.sub_topic, "%s/%s/%s/#", ctx.sub_path, ctx.uart.device_id, MSG_TYPE_CMD);
+    sprintf(ctx.sub_topic_raw, "%s/%s/%s", ctx.sub_path, ctx.uart.device_id, MSG_TYPE_RAW_IN);
+    sprintf(ctx.sub_topic_exec_at, "%s/%s/%s", ctx.sub_path, device_id, MSG_TYPE_EXEC_AT);
 }
 
 void buildPubTopic(Context &ctx) {

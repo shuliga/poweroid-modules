@@ -8,13 +8,14 @@
 #include <Arduino.h>
 #include "ParserModel.h"
 
-#define BUFF_SIZE 10
+#define BUFF_SIZE 16
 
 class CircularBuffer {
 public:
     void reset();
     bool put(ParserModel &item);
     ParserModel * poll();
+    ParserModel * peek();
     uint8_t length();
     bool isEmpty();
     bool isFull();

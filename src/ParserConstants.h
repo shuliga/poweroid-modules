@@ -13,14 +13,15 @@
 #define SUBJ_PWR_VERSION  "ver"
 #define SUBJ_MQTT_BANNER  "banner"
 
-#define MODE_GET  "get"
-#define MODE_SET  "set"
-#define MODE_DISARM  "disarm"
+#define ACTION_GET  "get"
+#define ACTION_SET  "set"
+#define ACTION_DISARM  "disarm"
 
 #define MSG_TYPE_CMD  "cmd"
-#define MSG_TYPE_IN  "raw-in"
+#define MSG_TYPE_RAW_IN  "raw-in"
 #define MSG_TYPE_OUT  "raw-out"
 #define MSG_TYPE_STATUS  "status"
 #define MSG_TYPE_INIT  "init"
+#define MSG_TYPE_EXEC_AT  "exec-at"
 
 #endif //POWEROID_MODULES_PARSERCONSTANTS_H
