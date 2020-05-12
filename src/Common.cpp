@@ -3,6 +3,7 @@
 //
 
 #include "Common.h"
+#include "Global.h"
 
 Global GLOBAL;
 
@@ -64,6 +65,19 @@ uint8_t splitLines(char *lines) {
     return n;
 }
 
+char *getItem(char *split, uint8_t size, uint8_t idx) {
+    uint8_t z = 0;
+    for (uint8_t i = 0; i < size; i++) {
+        if (split[i] == '\0' || i == 0) {
+            z++;
+        }
+        if (z == idx) {
+            return &split[i] + (i == 0 ? 0 : 1);
+        }
+    }
+    return NULL;
+}
+
 char *getItemBackwards(char *split, uint8_t size, uint8_t idx) {
     uint8_t z = 0;
     for (uint8_t i = size - 1; i >= 0; i--) {
@@ -76,7 +90,6 @@ char *getItemBackwards(char *split, uint8_t size, uint8_t idx) {
     }
     return NULL;
 }
-
 
 
 bool strEndsWith(const char * str, const char * suffix) {

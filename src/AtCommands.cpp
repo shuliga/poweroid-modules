@@ -4,6 +4,7 @@
 
 #include "AtCommands.h"
 #include <Arduino.h>
+#include "Global.h"
 #include "Common.h"
 
 static const char* CMD_RESTART="RESTART";
@@ -29,6 +30,7 @@ static const char* CMD_MQTT_PORT="MQTT_PORT";
 static const char* CMD_MQTT_PASS="MQTT_PASS";
 static const char* CMD_MQTT_ADDRESS="MQTT_ADDRESS";
 static const char* CMD_MQTT_SERVICE="MQTT_SERVICE";
+static const char* CMD_MQTT_CUSTOMER="MQTT_CUSTOMER";
 static const char* CMD_MQTT_CONNECTED="MQTT_CONNECTED";
 static const char* CMD_MQTT_CONNECT="MQTT_CONNECT";
 
@@ -133,14 +135,16 @@ const char **AtCommands::process(const char *atCommand) {
                     16 +
                     16 +
                     16 +
+                    16 +
                     3*7 + 1;
             static char info[size];
-            sprintf(info, "%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s",
+            sprintf(info, "%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s\n%s: %s",
                     CMD_MQTT_HOST, ctx->mqtt.host,
                     CMD_MQTT_PORT, ctx->mqtt.port,
                     CMD_MQTT_USER, ctx->mqtt.user,
                     CMD_MQTT_PASS, ctx->mqtt.pass,
                     CMD_MQTT_SERVICE, ctx->mqtt.service,
+                    CMD_MQTT_CUSTOMER, ctx->mqtt.customer,
                     CMD_MQTT_ADDRESS, ctx->mqtt.address,
                     CMD_MQTT_CONNECTED, bool_values[GLOBAL.status.mqttConnected]
             );
@@ -170,6 +174,10 @@ const char **AtCommands::process(const char *atCommand) {
         if(startsWith(cmd, CMD_MQTT_SERVICE)){
             const char * val = getValue(cmd);
             return cmdSetOrGet(CMD_MQTT_SERVICE, val, setOrGetCtxValue(ctx->mqtt.service, val, CTX_LEN_MQTT_SERVICE));
+        }
+        if(startsWith(cmd, CMD_MQTT_CUSTOMER)){
+            const char * val = getValue(cmd);
+            return cmdSetOrGet(CMD_MQTT_CUSTOMER, val, setOrGetCtxValue(ctx->mqtt.service, val, CTX_LEN_MQTT_CUSTOMER));
         }
         if(startsWith(cmd, CMD_MQTT_ADDRESS)){
             const char * val = getValue(cmd);

@@ -24,10 +24,16 @@ bool MqttParser::parseOut(String &path, char *payload, ParserModel &parsed) {
         if (strcmp(type, MSG_TYPE_EXEC_AT) == 0) {
             strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
             return true;
-        } else {
+        }
+        if (strcmp(type, MSG_TYPE_EXEC_AT) == 0) {
+            strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
+            return true;
+        }
+        strncpy(type, getItem(split, path.length(), 4), MODEL_TYPE_LENGTH);
+        if (strcmp(type, MSG_TYPE_CMD) == 0) {
             strncpy(parsed.type, MSG_TYPE_CMD, MODEL_TYPE_LENGTH);
             strncpy(subject, getItemBackwards(split, path.length(), 2), MODEL_SUBJ_LENGTH);
-            strncpy(parsed.mode, getItemBackwards(split, path.length(), 3), MODEL_ACTION_LENGTH);
+            strncpy(parsed.action, getItemBackwards(split, path.length(), 3), MODEL_ACTION_LENGTH);
             if (strcmp(subject, SUBJ_PROP) == 0) {
                 strcpy(parsed.subject, SUBJ_PROP);
                 parsed.idx = path.substring(idx_start).toInt();

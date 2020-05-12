@@ -6,6 +6,7 @@
 #include "MqttParser.h"
 #include "ParserConstants.h"
 #include "Common.h"
+#include "Global.h"
 
 static const long utcOffsetInSeconds = 3600;
 
@@ -21,7 +22,7 @@ void MqttProcessor::process(char *topic, unsigned char *payload, unsigned int le
     printToSerial(topic, " => ", str_buffer);
 
     ParserModel msg;
-    if (strncmp(CTX->sub_path, topic, strlen(CTX->sub_path)) == 0) {
+    if (strncmp(GLOBAL.topics.prefix, topic, strlen(GLOBAL.topics.prefix)) == 0) {
         if (MQTT_Parser.parseOut(path, str_buffer, msg)){
             IN->put(msg);
         }
@@ -33,13 +34,13 @@ void MqttProcessor::publish() {
         ParserModel* msg = OUT->poll();
 
         if (msg) {
-            char target_topic[CTX_LEN_TOPIC];
-            char path[CTX_LEN_TOPIC];
+            char target_topic[GLOBAL_LEN_TOPIC];
+            char path[GLOBAL_LEN_TOPIC];
             char payload[MODEL_VAL_LENGTH];
 
             if (MQTT_Parser.parseIn(*msg, path, payload)) {
                 buildPubTopic(*CTX, msg->device);
-                sprintf(target_topic, "%s/%s", CTX->pub_topic, path);
+                sprintf(target_topic, "%s/%s", GLOBAL.topics.pub_topic, path);
 
                 printToSerial("MQTT: sending OUT msg: ", target_topic, " | ", payload);
                 mqttClient->publish(target_topic, payload, msg->retained);

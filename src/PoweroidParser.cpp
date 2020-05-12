@@ -51,27 +51,27 @@ bool PoweroidParser::parseOut(const String &input, ParserModel &parsed) {
 
 bool PoweroidParser::parseIn(ParserModel &input, char * parsed) {
     if (strcmp(input.subject, SUBJ_PROP) == 0){
-        if(strcmp(input.mode, ACTION_SET) == 0){
-            sprintf(parsed, SETTER_PATTERN, input.mode, input.subject, input.idx, input.value);
+        if(strcmp(input.action, ACTION_SET) == 0){
+            sprintf(parsed, SETTER_PATTERN, input.action, input.subject, input.idx, input.value);
             return true;
         }
-        if(strcmp(input.mode, ACTION_GET) == 0){
-            sprintf(parsed, GETTER_PATTERN, input.mode, input.subject, input.idx);
+        if(strcmp(input.action, ACTION_GET) == 0){
+            sprintf(parsed, GETTER_PATTERN, input.action, input.subject, input.idx);
             return true;
         }
     }
     if (strcmp(input.subject, SUBJ_STATE) == 0){
-        if(strcmp(input.mode, ACTION_DISARM) == 0){
-            sprintf(parsed, SETTER_PATTERN, input.mode, input.subject, input.idx, input.value);
+        if(strcmp(input.action, ACTION_DISARM) == 0){
+            sprintf(parsed, SETTER_PATTERN, input.action, input.subject, input.idx, input.value);
             return true;
         }
-        if(strcmp(input.mode, ACTION_GET) == 0){
-            sprintf(parsed, GETTER_PATTERN, input.mode, input.subject, input.idx);
+        if(strcmp(input.action, ACTION_GET) == 0){
+            sprintf(parsed, GETTER_PATTERN, input.action, input.subject, input.idx);
             return true;
         }
     }
     if (strcmp(input.subject, SUBJ_MQTT_VER) == 0){
-        sprintf(parsed, "%s_%s", input.mode, SUBJ_PWR_VERSION);
+        sprintf(parsed, "%s_%s", input.action, SUBJ_PWR_VERSION);
         return true;
     }
     return false;

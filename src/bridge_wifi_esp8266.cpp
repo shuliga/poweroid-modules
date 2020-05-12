@@ -5,6 +5,7 @@
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
 #include <PubSubClient.h>
+#include "Global.h"
 #include "Context.h"
 #include "CircularBuffer.h"
 #include "AtCommands.h"
@@ -35,8 +36,6 @@ PubSubClient mqttClient(wclient);
 AtCommands AT(&CTX);
 PoweroidProcessor pwrProcessor(&IN, &OUT, &CTX);
 MqttProcessor mqttProcessor(&IN, &OUT, &CTX, &mqttClient);
-
-void sendInitMessage();
 
 void printMQTTInfo();
 
@@ -69,19 +68,20 @@ void loadContext() {
 }
 
 void printMQTTInfo() {
-    Serial.printf("MQTT sub: %s\r\n", CTX.sub_topic);
-    Serial.printf("MQTT sub RAW: %s\r\n", CTX.sub_topic_raw);
+    Serial.printf("MQTT UART path: %s#\r\n", GLOBAL.topics.sub_uart_topic);
+    Serial.printf("MQTT device's RAW: %s\r\n", GLOBAL.topics.sub_device_topic);
 }
 
 void sendInitMessage(const char *device_id) {
     ParserModel initMsg;
-    initMsg.subject[0] = '\0';
+//    initMsg.subject[0] = '\0';
     char timestmp[20];
     TIME.getTimestamp(timestmp);
     sprintf(initMsg.value, "%s, %s", device_id, timestmp);
     strcpy(initMsg.type, MSG_TYPE_INIT);
     strcpy(initMsg.device, DEVICE_ID);
-    initMsg.idx = 0;
+    initMsg.retained = true;
+//    initMsg.idx = 0;
     OUT.put(initMsg);
 }
 
@@ -175,7 +175,7 @@ void processCommand() {
     pwrProcessor.processIn();
 }
 
-void processExecAt() {
+void processInternal() {
     if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_EXEC_AT) == 0) {
         ParserModel *in_at = IN.poll();
         uint8_t total_len = strlen(in_at->value);
@@ -188,6 +188,16 @@ void processExecAt() {
                 cursor++;
             }
         }
+    }
+    if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_HEALTH) == 0) {
+        IN.poll();
+        ParserModel healthMsg;
+        strcpy(healthMsg.type, MSG_TYPE_INIT);
+        strcpy(healthMsg.device, DEVICE_ID);
+        strcpy(healthMsg.value, "OK");
+        healthMsg.retained = false;
+        OUT.put(healthMsg);
+
     }
 }
 
@@ -216,13 +226,11 @@ void processMqtt(PubSubClient &client) {
 }
 
 void mqttSubscribe(PubSubClient &client) {
-    client.unsubscribe(CTX.sub_topic);
-    client.unsubscribe(CTX.sub_topic_raw);
-    client.unsubscribe(CTX.sub_topic_exec_at);
+    client.unsubscribe(GLOBAL.topics.sub_device_topic);
+    client.unsubscribe(GLOBAL.topics.sub_uart_topic);
     buildSubTopic(CTX, DEVICE_ID);
-    client.subscribe(CTX.sub_topic);
-    client.subscribe(CTX.sub_topic_raw);
-    client.subscribe(CTX.sub_topic_exec_at);
+    client.unsubscribe(GLOBAL.topics.sub_device_topic);
+    client.unsubscribe(GLOBAL.topics.sub_uart_topic);
     printMQTTInfo();
 }
 
@@ -327,6 +335,8 @@ void setup() {
     mqttClient.setServer(CTX.mqtt.host, atoi(CTX.mqtt.port));
     mqttClient.setCallback(mqtt_callback);
 
+    Serial.printf("Sketch size: %u\n", ESP.getSketchSize());
+    Serial.printf("Free size: %u\n", ESP.getFreeSketchSpace());
     Serial.println("Bridge started");
     cleanSerial();
 
@@ -351,7 +361,7 @@ void loop() {
     if (GLOBAL.status.wifiConnected) {
         if (GLOBAL.flag.connect) {
             processMqtt(mqttClient);
-            processExecAt();
+            processInternal();
         } else {
             WiFi.disconnect();
             Serial.println("WiFi disconnected");

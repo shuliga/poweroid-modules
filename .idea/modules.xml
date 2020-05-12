@@ -4,7 +4,7 @@
     <modules>
       <module fileurl="file://$PROJECT_DIR$/.idea/clion.iml" filepath="$PROJECT_DIR$/.idea/clion.iml" />
       <module fileurl="file://$PROJECT_DIR$/.idea/platformio.iml" filepath="$PROJECT_DIR$/.idea/platformio.iml" />
-      <module fileurl="file://$PROJECT_DIR$/.idea/poweroid-modules2.iml" filepath="$PROJECT_DIR$/.idea/poweroid-modules2.iml" />
+      <module fileurl="file://$PROJECT_DIR$/.idea/poweroid-modules1.iml" filepath="$PROJECT_DIR$/.idea/poweroid-modules1.iml" />
     </modules>
   </component>
 </project>

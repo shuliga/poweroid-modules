@@ -3,8 +3,12 @@
 //
 #include <Arduino.h>
 #include <EEPROM.h>
+#include "Global.h"
 #include "Context.h"
 #include "ParserConstants.h"
+
+const char *service = "rent";
+const char *customer = "test-customer";
 
 // Address pattern: <country code #2>-<City code #2>-<postal code>-<street code #2>-<building no.>-<apt. no.>
 const char *address = "ua-test";
@@ -17,8 +21,6 @@ const char *mqtt_port = "12674";
 const char *mqtt_user = "thermo-01";
 const char *mqtt_pass = "ThermoPass";
 
-const char *service = "rent";
-
 size_t eepromSize(const Context &ctx);
 
 const int uart_baud = 115200;
@@ -26,6 +28,7 @@ const int uart_baud = 115200;
 void loadDefaultContext(Context &ctx) {
     strcpy(ctx.mqtt.service, service);
     strcpy(ctx.mqtt.address, address);
+    strcpy(ctx.mqtt.customer, customer);
     strcpy(ctx.mqtt.host, mqtt_server);
     strcpy(ctx.mqtt.user, mqtt_user);
     strcpy(ctx.mqtt.pass, mqtt_pass);
@@ -68,18 +71,13 @@ void storeContext(Context &ctx) {
 }
 
 void buildSubTopic(Context &ctx, const char *device_id) {
-    sprintf(ctx.sub_path, "%s/%s", ctx.mqtt.service, ctx.mqtt.address);
-    sprintf(ctx.sub_topic, "%s/%s/%s/#", ctx.sub_path, ctx.uart.device_id, MSG_TYPE_CMD);
-    sprintf(ctx.sub_topic_raw, "%s/%s/%s", ctx.sub_path, ctx.uart.device_id, MSG_TYPE_RAW_IN);
-    sprintf(ctx.sub_topic_exec_at, "%s/%s/%s", ctx.sub_path, device_id, MSG_TYPE_EXEC_AT);
-}
-
-void buildPubTopic(Context &ctx) {
-    sprintf(ctx.pub_topic, "%s/%s/%s", ctx.mqtt.service, ctx.mqtt.address, ctx.uart.device_id);
+    sprintf(GLOBAL.topics.prefix, "%s/%s/%s", ctx.mqtt.service, ctx.mqtt.customer, ctx.mqtt.address);
+    sprintf(GLOBAL.topics.sub_uart_topic, "%s/%s/#", GLOBAL.topics.prefix, ctx.uart.device_id);
+    sprintf(GLOBAL.topics.sub_device_topic, "%s/%s/#", GLOBAL.topics.prefix, device_id);
 }
 
 void buildPubTopic(Context &ctx, const char * device_id) {
-    sprintf(ctx.pub_topic, "%s/%s/%s", ctx.mqtt.service, ctx.mqtt.address, device_id && strlen(device_id) > 0 ?  device_id : ctx.uart.device_id);
+    sprintf(GLOBAL.topics.pub_topic, "%s/%s", GLOBAL.topics.prefix, device_id && strlen(device_id) > 0 ?  device_id : ctx.uart.device_id);
 }
 
 unsigned long hash(byte *data, unsigned long size) {
