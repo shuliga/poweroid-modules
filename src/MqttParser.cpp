@@ -25,11 +25,15 @@ bool MqttParser::parseOut(String &path, char *payload, ParserModel &parsed) {
             strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
             return true;
         }
-        if (strcmp(type, MSG_TYPE_EXEC_AT) == 0) {
+        if (strcmp(type, MSG_TYPE_HEALTH) == 0) {
             strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
             return true;
         }
-        strncpy(type, getItem(split, path.length(), 4), MODEL_TYPE_LENGTH);
+        if (strcmp(type, MSG_TYPE_OTA) == 0) {
+            strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
+            return true;
+        }
+        strncpy(type, getItem(split, path.length(), 5), MODEL_TYPE_LENGTH);
         if (strcmp(type, MSG_TYPE_CMD) == 0) {
             strncpy(parsed.type, MSG_TYPE_CMD, MODEL_TYPE_LENGTH);
             strncpy(subject, getItemBackwards(split, path.length(), 2), MODEL_SUBJ_LENGTH);

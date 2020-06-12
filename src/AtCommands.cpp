@@ -18,19 +18,19 @@ static const char* UART_DEVICE_ID="UART_DEVICE_ID";
 static const char* UART_BAUD="UART_BAUD";
 
 static const char* CMD_WIFI_INFO="WIFI_INFO";
-static const char* CMD_WIFI_PASS="WIFI_PASS";
 static const char* CMD_WIFI_SSID="WIFI_SSID";
+static const char* CMD_WIFI_PASS="WIFI_PASS";
 static const char* CMD_WIFI_TRY_CONNECT="WIFI_TRY_CONNECT";
 static const char* CMD_WIFI_CONNECTED="WIFI_CONNECTED";
 
 static const char* CMD_MQTT_INFO="MQTT_INFO";
-static const char* CMD_MQTT_USER="MQTT_USER";
 static const char* CMD_MQTT_HOST="MQTT_HOST";
 static const char* CMD_MQTT_PORT="MQTT_PORT";
+static const char* CMD_MQTT_USER="MQTT_USER";
 static const char* CMD_MQTT_PASS="MQTT_PASS";
-static const char* CMD_MQTT_ADDRESS="MQTT_ADDRESS";
 static const char* CMD_MQTT_SERVICE="MQTT_SERVICE";
 static const char* CMD_MQTT_CUSTOMER="MQTT_CUSTOMER";
+static const char* CMD_MQTT_ADDRESS="MQTT_ADDRESS";
 static const char* CMD_MQTT_CONNECTED="MQTT_CONNECTED";
 static const char* CMD_MQTT_CONNECT="MQTT_CONNECT";
 
@@ -177,7 +177,7 @@ const char **AtCommands::process(const char *atCommand) {
         }
         if(startsWith(cmd, CMD_MQTT_CUSTOMER)){
             const char * val = getValue(cmd);
-            return cmdSetOrGet(CMD_MQTT_CUSTOMER, val, setOrGetCtxValue(ctx->mqtt.service, val, CTX_LEN_MQTT_CUSTOMER));
+            return cmdSetOrGet(CMD_MQTT_CUSTOMER, val, setOrGetCtxValue(ctx->mqtt.customer, val, CTX_LEN_MQTT_CUSTOMER));
         }
         if(startsWith(cmd, CMD_MQTT_ADDRESS)){
             const char * val = getValue(cmd);

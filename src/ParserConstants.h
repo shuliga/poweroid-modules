@@ -23,6 +23,8 @@
 #define MSG_TYPE_STATUS  "status"
 #define MSG_TYPE_INIT  "init"
 #define MSG_TYPE_EXEC_AT  "exec-at"
+#define MSG_TYPE_OTA  "ota"
 #define MSG_TYPE_HEALTH  "health"
+#define MSG_TYPE_RESPONSE  "response"
 
 #endif //POWEROID_MODULES_PARSERCONSTANTS_H

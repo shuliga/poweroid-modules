@@ -9,6 +9,7 @@
 #include "Context.h"
 #include "CircularBuffer.h"
 #include "AtCommands.h"
+#include "OTA.h"
 #include "PoweroidProcessor.h"
 #include "MqttProcessor.h"
 #include "ParserConstants.h"
@@ -32,6 +33,8 @@ CircularBuffer IN, OUT;
 
 WiFiClient wclient;
 PubSubClient mqttClient(wclient);
+
+OTA ota(wclient);
 
 AtCommands AT(&CTX);
 PoweroidProcessor pwrProcessor(&IN, &OUT, &CTX);
@@ -68,20 +71,18 @@ void loadContext() {
 }
 
 void printMQTTInfo() {
-    Serial.printf("MQTT UART path: %s#\r\n", GLOBAL.topics.sub_uart_topic);
-    Serial.printf("MQTT device's RAW: %s\r\n", GLOBAL.topics.sub_device_topic);
+    Serial.printf("Subscribed to MQTT UART device path: %s\r\n", GLOBAL.topics.sub_uart_topic);
+    Serial.printf("Subscribed to MQTT Bridge device path: %s\r\n", GLOBAL.topics.sub_device_topic);
 }
 
 void sendInitMessage(const char *device_id) {
     ParserModel initMsg;
-//    initMsg.subject[0] = '\0';
     char timestmp[20];
     TIME.getTimestamp(timestmp);
     sprintf(initMsg.value, "%s, %s", device_id, timestmp);
     strcpy(initMsg.type, MSG_TYPE_INIT);
     strcpy(initMsg.device, DEVICE_ID);
     initMsg.retained = true;
-//    initMsg.idx = 0;
     OUT.put(initMsg);
 }
 
@@ -177,27 +178,42 @@ void processCommand() {
 
 void processInternal() {
     if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_EXEC_AT) == 0) {
-        ParserModel *in_at = IN.poll();
-        uint8_t total_len = strlen(in_at->value);
+        ParserModel *atIn = IN.poll();
+        uint8_t total_len = strlen(atIn->value);
         uint8_t cursor = 0;
-        splitLines(in_at->value);
+        splitLines(atIn->value);
         while (cursor < total_len) {
-            AT.process(in_at->value + cursor);
-            cursor += strlen(in_at->value + cursor) + 1;
-            while (in_at->value[cursor] == '\0' && cursor < total_len) {
+            AT.process(atIn->value + cursor);
+            cursor += strlen(atIn->value + cursor) + 1;
+            while (atIn->value[cursor] == '\0' && cursor < total_len) {
                 cursor++;
             }
         }
+        return;
     }
     if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_HEALTH) == 0) {
-        IN.poll();
         ParserModel healthMsg;
-        strcpy(healthMsg.type, MSG_TYPE_INIT);
+        strcpy(healthMsg.type, MSG_TYPE_RESPONSE );
         strcpy(healthMsg.device, DEVICE_ID);
-        strcpy(healthMsg.value, "OK");
+        strcpy(healthMsg.value, "Health - OK");
         healthMsg.retained = false;
         OUT.put(healthMsg);
+        return;
+    }
 
+    if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_OTA) == 0) {
+        ParserModel *otaIn = IN.poll();
+        const char * res = ota.install(otaIn->value);
+        ParserModel otaMsg;
+        strcpy(otaMsg.type, MSG_TYPE_OTA);
+        strcpy(otaMsg.device, DEVICE_ID);
+        strcpy(otaMsg.value, res);
+        otaMsg.retained = false;
+        OUT.put(otaMsg);
+        if (strcmp(res, "OK") == 0){
+            ota.apply();
+        }
+        return;
     }
 }
 
@@ -229,8 +245,8 @@ void mqttSubscribe(PubSubClient &client) {
     client.unsubscribe(GLOBAL.topics.sub_device_topic);
     client.unsubscribe(GLOBAL.topics.sub_uart_topic);
     buildSubTopic(CTX, DEVICE_ID);
-    client.unsubscribe(GLOBAL.topics.sub_device_topic);
-    client.unsubscribe(GLOBAL.topics.sub_uart_topic);
+    client.subscribe(GLOBAL.topics.sub_device_topic);
+    client.subscribe(GLOBAL.topics.sub_uart_topic);
     printMQTTInfo();
 }
 

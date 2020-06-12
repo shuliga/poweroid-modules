@@ -12,18 +12,16 @@
 
 class OTA {
 
-    OTA(Stream *_in, const uint32_t _size): size(_size), in(_in) {
-    };
-
 public:
 
-    bool checkSignature();
-    bool install();
+    explicit OTA(WiFiClient &client): _client(client) {
+    };
+
+    const char* install(const char * url);
     void apply();
 
 private:
-    uint32_t size;
-    Stream *in;
+    WiFiClient _client;
 };
 
 

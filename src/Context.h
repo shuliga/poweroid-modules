@@ -21,7 +21,7 @@
 #define CTX_LEN_WIFI_SSID 16
 
 
-struct MqttConext {
+struct MqttContext {
     char host[CTX_LEN_MQTT_HOST + 1];
     char port[CTX_LEN_MQTT_PORT + 1];
     char user[CTX_LEN_MQTT_USER + 1];
@@ -46,7 +46,7 @@ struct UartContext {
 
 struct Context {
 
-    MqttConext mqtt;
+    MqttContext mqtt;
     WiFiContext wifi;
     UartContext uart;
 
