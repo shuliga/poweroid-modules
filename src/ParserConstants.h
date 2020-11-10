@@ -12,6 +12,7 @@
 #define SUBJ_MQTT_VER  "version"
 #define SUBJ_PWR_VERSION  "ver"
 #define SUBJ_MQTT_BANNER  "banner"
+#define SUBJ_RESPONSE  "response"
 
 #define ACTION_GET  "get"
 #define ACTION_SET  "set"
@@ -25,6 +26,5 @@
 #define MSG_TYPE_EXEC_AT  "exec-at"
 #define MSG_TYPE_OTA  "ota"
 #define MSG_TYPE_HEALTH  "health"
-#define MSG_TYPE_RESPONSE  "response"
 
 #endif //POWEROID_MODULES_PARSERCONSTANTS_H

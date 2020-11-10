@@ -63,6 +63,10 @@ bool MqttParser::parseIn(ParserModel &input, char *parsedPath, char *payload) {
         sprintf(parsedPath, "%s/%s/%d", input.type, input.subject, input.idx);
         return true;
     }
+    if (strcmp(input.type, MSG_TYPE_HEALTH) == 0 || strcmp(input.type, MSG_TYPE_OTA) == 0) {
+        sprintf(parsedPath, "%s/%s", input.type, input.subject);
+        return true;
+    }
     sprintf(parsedPath, "%s", input.type);
     return true;
 }

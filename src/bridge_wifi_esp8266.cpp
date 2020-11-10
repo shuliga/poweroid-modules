@@ -193,7 +193,8 @@ void processInternal() {
     }
     if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_HEALTH) == 0) {
         ParserModel healthMsg;
-        strcpy(healthMsg.type, MSG_TYPE_RESPONSE );
+        strcpy(healthMsg.type, MSG_TYPE_HEALTH );
+        strcpy(healthMsg.subject, SUBJ_RESPONSE);
         strcpy(healthMsg.device, DEVICE_ID);
         strcpy(healthMsg.value, "Health - OK");
         healthMsg.retained = false;
@@ -207,6 +208,7 @@ void processInternal() {
         ParserModel otaMsg;
         strcpy(otaMsg.type, MSG_TYPE_OTA);
         strcpy(otaMsg.device, DEVICE_ID);
+        strcpy(otaMsg.subject, SUBJ_RESPONSE);
         strcpy(otaMsg.value, res);
         otaMsg.retained = false;
         OUT.put(otaMsg);
