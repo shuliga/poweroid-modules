@@ -19,10 +19,12 @@ struct Status {
     bool uartConnected = false;
     bool wifiConnected = false;
     bool mqttConnected = false;
+    bool mqttDisconnectLatch = false;
     bool initiated = false;
-    unsigned long timer_2Hz = 0;
+    unsigned long counter_2Hz = 0;
     bool timer_5s = false;
     bool timer_2_5s = false;
+    bool timer_0_5s = false;
 };
 
 struct Topics {

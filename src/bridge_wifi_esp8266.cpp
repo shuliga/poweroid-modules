@@ -220,9 +220,8 @@ void processInternal() {
 void processMqtt(PubSubClient &client) {
     if (GLOBAL.status.mqttConnected) {
         if (!GLOBAL.flag.mqttConnect) {
-            GLOBAL.status.mqttConnected = false;
-            Serial.println("Disconnected from MQTT server");
             client.disconnect();
+            client.loop();
             return;
         }
         if (GLOBAL.cmd.subscribe) {
@@ -233,8 +232,10 @@ void processMqtt(PubSubClient &client) {
             sendInitMessage(CTX.uart.device_id);
             GLOBAL.cmd.initiate = false;
         }
-        client.loop();
         mqttProcessor.publish();
+        if (GLOBAL.status.timer_0_5s){
+            client.loop();
+        }
     } else {
         if (GLOBAL.flag.mqttConnect && GLOBAL.status.timer_5s)
             mqttTryConnect(client);
@@ -253,22 +254,27 @@ void mqttSubscribe(PubSubClient &client) {
 void mqttTryConnect(PubSubClient &client) {
     Serial.printf("Connecting to MQTT server %s:%s, client_id=%s, user=%s, pass=%s\n", CTX.mqtt.host, CTX.mqtt.port,
                   DEVICE_MQTT_ID, CTX.mqtt.user, CTX.mqtt.pass);
-    if (client.connect(DEVICE_MQTT_ID, CTX.mqtt.user, CTX.mqtt.pass)) {
+    if (uint8_t status = client.connect(DEVICE_MQTT_ID, CTX.mqtt.user, CTX.mqtt.pass)) {
         Serial.println("Connected to MQTT server");
         GLOBAL.cmd.subscribe = true;
         GLOBAL.status.mqttConnected = true;
+        GLOBAL.status.mqttDisconnectLatch = true;
     } else {
         GLOBAL.status.mqttConnected = false;
-        Serial.println("Could not connect to MQTT server");
+        Serial.printf("Could not connect to MQTT server: %d\n", status);
     }
 }
 
 void testConnect() {
     GLOBAL.status.wifiConnected = WiFi.isConnected();
     digitalWrite(LED,
-                 GLOBAL.status.wifiConnected ? GLOBAL.status.mqttConnected ? HIGH : GLOBAL.status.timer_2Hz % 2 : LOW);
+                 GLOBAL.status.wifiConnected ? GLOBAL.status.mqttConnected ? HIGH : GLOBAL.status.counter_2Hz % 2 : LOW);
     if (GLOBAL.status.wifiConnected && GLOBAL.status.timer_5s) {
         GLOBAL.status.mqttConnected = mqttClient.connected();
+        if (!GLOBAL.status.mqttConnected && GLOBAL.status.mqttDisconnectLatch){
+            Serial.println("Disconnected from MQTT server");
+            GLOBAL.status.mqttDisconnectLatch = false;
+        }
     }
 }
 
@@ -324,12 +330,14 @@ void cleanSerial() {
 void processTimer() {
     GLOBAL.status.timer_5s = false;
     GLOBAL.status.timer_2_5s = false;
+    GLOBAL.status.timer_0_5s = false;
     unsigned long current = millis();
     if ((current - ((current < timestamp) ? (timestamp - ULONG_MAX) : timestamp)) >= 500L) {
-        GLOBAL.status.timer_2Hz++;
+        GLOBAL.status.counter_2Hz++;
         timestamp = current;
-        GLOBAL.status.timer_5s = !(GLOBAL.status.timer_2Hz % 10);
-        GLOBAL.status.timer_2_5s = !(GLOBAL.status.timer_2Hz % 5);
+        GLOBAL.status.timer_5s = !(GLOBAL.status.counter_2Hz % 10);
+        GLOBAL.status.timer_2_5s = !(GLOBAL.status.counter_2Hz % 5);
+        GLOBAL.status.timer_0_5s = true;
     }
 }
 

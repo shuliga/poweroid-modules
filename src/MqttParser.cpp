@@ -14,40 +14,43 @@ bool MqttParser::parseOut(String &path, char *payload, ParserModel &parsed) {
         char split[128];
         char subject[MODEL_SUBJ_LENGTH] = "";
         char type[MODEL_TYPE_LENGTH];
-        splitStr(split, path.c_str(), cmd_divider);
-        strncpy(type, getItemBackwards(split, path.length(), 1), MODEL_TYPE_LENGTH);
-        strncpy(parsed.value, payload, MODEL_VAL_LENGTH);
-        if (strcmp(type, MSG_TYPE_RAW_IN) == 0) {
-            strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
-            return true;
-        }
-        if (strcmp(type, MSG_TYPE_EXEC_AT) == 0) {
-            strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
-            return true;
-        }
-        if (strcmp(type, MSG_TYPE_HEALTH) == 0) {
-            strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
-            return true;
-        }
-        if (strcmp(type, MSG_TYPE_OTA) == 0) {
-            strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
-            return true;
-        }
-        strncpy(type, getItem(split, path.length(), 5), MODEL_TYPE_LENGTH);
-        if (strcmp(type, MSG_TYPE_CMD) == 0) {
-            strncpy(parsed.type, MSG_TYPE_CMD, MODEL_TYPE_LENGTH);
-            strncpy(subject, getItemBackwards(split, path.length(), 2), MODEL_SUBJ_LENGTH);
-            strncpy(parsed.action, getItemBackwards(split, path.length(), 3), MODEL_ACTION_LENGTH);
-            if (strcmp(subject, SUBJ_PROP) == 0) {
-                strcpy(parsed.subject, SUBJ_PROP);
-                parsed.idx = path.substring(idx_start).toInt();
+        uint8_t sections = splitStr(split, path.c_str(), cmd_divider);
+        if (sections > 4 ) {
+            strncpy(type, getItemBackwards(split, path.length(), 1), MODEL_TYPE_LENGTH);
+            strncpy(parsed.value, payload, MODEL_VAL_LENGTH);
+            if (strcmp(type, MSG_TYPE_RAW_IN) == 0) {
+                strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
                 return true;
             }
-            if (strcmp(subject, SUBJ_STATE) == 0) {
-                strcpy(parsed.subject, SUBJ_STATE);
-                parsed.idx = path.substring(idx_start).toInt();
+            if (strcmp(type, MSG_TYPE_EXEC_AT) == 0) {
+                strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
                 return true;
             }
+            if (strcmp(type, MSG_TYPE_HEALTH) == 0) {
+                strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
+                return true;
+            }
+            if (strcmp(type, MSG_TYPE_OTA) == 0) {
+                strncpy(parsed.type, type, MODEL_TYPE_LENGTH);
+                return true;
+            }
+            strncpy(type, getItem(split, path.length(), 5), MODEL_TYPE_LENGTH);
+            if (strcmp(type, MSG_TYPE_CMD) == 0) {
+                strncpy(parsed.type, MSG_TYPE_CMD, MODEL_TYPE_LENGTH);
+                strncpy(subject, getItemBackwards(split, path.length(), 2), MODEL_SUBJ_LENGTH);
+                strncpy(parsed.action, getItemBackwards(split, path.length(), 3), MODEL_ACTION_LENGTH);
+                if (strcmp(subject, SUBJ_PROP) == 0) {
+                    strcpy(parsed.subject, SUBJ_PROP);
+                    parsed.idx = path.substring(idx_start).toInt();
+                    return true;
+                }
+                if (strcmp(subject, SUBJ_STATE) == 0) {
+                    strcpy(parsed.subject, SUBJ_STATE);
+                    parsed.idx = path.substring(idx_start).toInt();
+                    return true;
+                }
+            }
+
         }
     }
     return false;
