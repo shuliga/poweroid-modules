@@ -269,8 +269,7 @@ void mqttTryConnect(PubSubClient &client) {
 
 void testConnect() {
     GLOBAL.status.wifiConnected = WiFi.isConnected();
-    digitalWrite(LED,
-                 GLOBAL.status.wifiConnected ? GLOBAL.status.mqttConnected ? HIGH : GLOBAL.status.counter_2Hz % 2 : LOW);
+    digitalWrite(LED,GLOBAL.status.wifiConnected ? GLOBAL.status.mqttConnected ? HIGH : GLOBAL.status.counter_2Hz % 2 : LOW);
     if (GLOBAL.status.wifiConnected && GLOBAL.status.timer_5s) {
         GLOBAL.status.mqttConnected = mqttClient.connected();
         if (!GLOBAL.status.mqttConnected && GLOBAL.status.mqttDisconnectLatch){
@@ -344,6 +343,7 @@ void processTimer() {
 }
 
 void setup() {
+    ESP.wdtDisable();
 
     Serial.begin(115200);
     Serial.println();
@@ -367,6 +367,7 @@ void setup() {
     cleanSerial();
 
     timestamp = millis();
+    ESP.wdtEnable(WDTO_8S);
 }
 
 void loop() {
@@ -395,4 +396,6 @@ void loop() {
     }
 
     processTimer();
+
+    ESP.wdtFeed();
 }
