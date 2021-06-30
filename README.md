@@ -1,10 +1,12 @@
 # Poweroid UART to MQTT bridge
 ## Description
-Poweroid UART to MQTT bridge (PWM-BMU) is extension module, plugged into Poweroid UART extension socket, usually replacing  Bluetooth or Radio modules.
+Poweroid UART to MQTT bridge (PWM-BMU) is a module that plugs into Poweroid UART extension socket, usually replacing  Bluetooth or Radio modules.
+It transparently bridges Poweroid UART commands to MQTT server and vice versa.
+The AT-commands are used for  MQTT bridge configuration and control. 
 ## Specs
 * _Voltage_: 5VDC
 * _Current_: 0,07A
-* _UART connection speed_: 115200 baud.
+* _UART connection speed_: 115200 baud
 * _WiFi_: 802.11b,g
 
 
@@ -48,7 +50,7 @@ _(~) marks persistent variable_
 
 
 ## MQTT Topics
-### Bridge Itself
+### Bridge Module
 ##### Publishes
 * `<service>/<customer>/<address>/PWR-BMU-1/init` — responds with init information on startup: \<attached device name\>, \<datetime\> 
 * `<service>/<customer>/<address>/PWR-BMU-1/health` — responds with _'OK'_ on health check message
@@ -58,7 +60,7 @@ _(~) marks persistent variable_
 * `<exec-at>` — silently executes AT commands, passed in payload, limited to 512 bytes 
 * `<ota>` — tries to download binary update from https url, passed in payload; updates sketch on success; restarts 
 * `<health>`  — health check input trigger
-### On Behalf of Attached Poweroid Device
+### Bridge Module on Behalf of Attached Poweroid Device
 ##### Publishes
 * `<service>/<customer>/<address>/<device>/raw-out` — output of raw incoming UART data
 * `<service>/<customer>/<address>/<device>/<mode>/<path...>` — parsed responses from UART Poweroid device
@@ -66,4 +68,4 @@ _(~) marks persistent variable_
 * `<service>/<customer>/<address>/<device>/#`  see **Mode** for details on subsequent path
 ######Mode
 `raw-in`— direct input of Poweroid commands, is passed to UART
-`cmd`— execute command (_set_ or _get_ actions), subsequent path and payload is parsed in order to form Poweroid command and pass it to UART
+`cmd`— execute command (_set_ or _get_ actions), subsequent path and payload is converted to form Poweroid command and pass it to UART

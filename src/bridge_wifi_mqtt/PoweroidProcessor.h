@@ -8,12 +8,13 @@
 #include <Arduino.h>
 #include "CircularBuffer.h"
 #include "Context.h"
+#include "ParserModel.h"
 
 #define BANNER_RATE 10
 
 class PoweroidProcessor {
 private:
-    CircularBuffer *IN, *OUT;
+    CircularBuffer<ParserModel> *IN, *OUT;
     Context *CTX;
     uint8_t banner_cnt;
 
@@ -21,7 +22,7 @@ private:
     void outputParsedMessage(String &cmd, ParserModel &msg);
     unsigned char testBannerAndUpdateCnt(const String &cmd);
 public:
-    PoweroidProcessor(CircularBuffer *in, CircularBuffer *out, Context *ctx);
+    PoweroidProcessor(CircularBuffer<ParserModel> *in, CircularBuffer<ParserModel> *out, Context *ctx);
     void processOut(String cmd);
     void processIn() const;
 };

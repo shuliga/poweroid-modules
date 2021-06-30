@@ -10,7 +10,7 @@
 
 static const long utcOffsetInSeconds = 3600;
 
-MqttProcessor::MqttProcessor(CircularBuffer *in, CircularBuffer *out, Context *ctx, PubSubClient *pClient)
+MqttProcessor::MqttProcessor(CircularBuffer<ParserModel> *in, CircularBuffer<ParserModel> *out, Context *ctx, PubSubClient *pClient)
         : IN(in), OUT(out), CTX(ctx), mqttClient(pClient) {
 }
 
@@ -19,7 +19,7 @@ void MqttProcessor::process(char *topic, unsigned char *payload, unsigned int le
     strncpy(str_buffer, reinterpret_cast<const char *>(payload), length);
     str_buffer[length] = '\0';
     String path = String(topic);
-    printToSerial(topic, " => ", str_buffer);
+    logToSerial(topic, " => ", str_buffer);
 
     ParserModel msg;
     if (strncmp(GLOBAL.topics.prefix, topic, strlen(GLOBAL.topics.prefix)) == 0) {
@@ -42,7 +42,8 @@ void MqttProcessor::publish() {
                 buildPubTopic(*CTX, msg->device);
                 sprintf(target_topic, "%s/%s", GLOBAL.topics.pub_topic, path);
 
-                printToSerial("MQTT: sending OUT msg: ", target_topic, " | ", payload);
+                logToSerial("MQTT: sending OUT msg: ", target_topic, " | ", payload);
+                logToSerial("MQTT: payload length: ", strlen(payload));
                 mqttClient->publish(target_topic, payload, msg->retained);
             }
         }

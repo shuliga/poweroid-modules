@@ -16,7 +16,7 @@ const char *address = "ua-test";
 const char *ssid = "SHL-Net-2";
 const char *pass = "76543210";
 
-const char *mqtt_server = "farmer.cloudmqtt.com";
+const char *mqtt_server = "mqtt.poweroid.io";
 const char *mqtt_port = "12674";
 const char *mqtt_user = "thermo-01";
 const char *mqtt_pass = "ThermoPass";

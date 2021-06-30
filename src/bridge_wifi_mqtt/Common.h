@@ -7,11 +7,11 @@
 
 #include <Arduino.h>
 
-void printToSerial(const char * c1);
-void printToSerial(const char * c1, const char * c2);
-void printToSerial(const char *c1, int i);
-void printToSerial(const char * c1, const char * c2, const char * c3);
-void printToSerial(const char * c1, const char * c2, const char * c3, const char * c4);
+void logToSerial(const char * c1);
+void logToSerial(const char * c1, const char * c2);
+void logToSerial(const char *c1, int i);
+void logToSerial(const char * c1, const char * c2, const char * c3);
+void logToSerial(const char * c1, const char * c2, const char * c3, const char * c4);
 bool startsWith(const char * _cmd, const char * pref);
 bool strEndsWith(const char * str, const char * suffix);
 char *getItem(char *split, uint8_t size, uint8_t idx);

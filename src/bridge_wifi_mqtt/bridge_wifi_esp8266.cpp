@@ -29,7 +29,7 @@ unsigned long timestamp = 0;
 
 Context CTX;
 
-CircularBuffer IN, OUT;
+CircularBuffer<ParserModel> IN, OUT;
 
 WiFiClient wclient;
 PubSubClient mqttClient(wclient);
@@ -60,7 +60,7 @@ void mqttSubscribe(PubSubClient &client);
 
 void scanAvailableWiFiNetworks();
 
-void mqtt_callback(char *topic, unsigned char *payload, unsigned int length) {
+void mqtt_callback(char *topic, uint8_t *payload, unsigned int length) {
     mqttProcessor.process(topic, payload, length);
 }
 
@@ -165,10 +165,12 @@ void processCommand() {
 
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
-        cmd.replace('\n', '0');
+        cmd.trim();
         if (cmd.startsWith("AT")) {
+            logToSerial("Processing AT: ", cmd.c_str());
             processAT(cmd.c_str());
         } else {
+            logToSerial("Processing PWR: ", cmd.c_str());
             pwrProcessor.processOut(cmd);
         }
     }

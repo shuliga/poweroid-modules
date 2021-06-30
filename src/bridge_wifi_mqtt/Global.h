@@ -5,7 +5,7 @@
 #ifndef POWEROID_MODULES_GLOBAL_H
 #define POWEROID_MODULES_GLOBAL_H
 
-#define GLOBAL_LEN_TOPIC 64
+#define GLOBAL_LEN_TOPIC 96
 
 struct Cmd {
     bool subscribe = false;

@@ -7,12 +7,11 @@
 #include "ParserConstants.h"
 #include "Common.h"
 
-PoweroidProcessor::PoweroidProcessor(CircularBuffer *in, CircularBuffer *out, Context *ctx) : IN(in), OUT(out), CTX(ctx) {}
+PoweroidProcessor::PoweroidProcessor(CircularBuffer<ParserModel> *in, CircularBuffer<ParserModel> *out, Context *ctx) : IN(in), OUT(out), CTX(ctx) {}
 
 void PoweroidProcessor::processOut(String cmd) {
 
     ParserModel msg, rawMsg;
-
     if (!testBannerAndUpdateCnt(cmd) || banner_cnt % BANNER_RATE == 0) {
         outputParsedMessage(cmd, msg);
         outputRawMessage(cmd.c_str(), rawMsg);
@@ -30,7 +29,7 @@ void PoweroidProcessor::processIn() const {
     if (!this->IN->isEmpty()) {
         ParserModel *msg = this->IN->poll();
         bool isRaw = strcmp(msg->type, MSG_TYPE_RAW_IN) == 0;
-        printToSerial("PWR - sending IN msg: ", msg->type, "/", isRaw ? msg->value : msg->subject);
+        logToSerial("PWR - sending IN msg: ", msg->type, "/", isRaw ? msg->value : msg->subject);
         char parsed[MODEL_VAL_LENGTH];
         if (isRaw) {
             Serial.println(msg->value);
@@ -45,7 +44,7 @@ void PoweroidProcessor::processIn() const {
 void PoweroidProcessor::outputParsedMessage(String &cmd, ParserModel &_msg) {
     if (PWR_Parser.parseOut(cmd, _msg)) {
         strcpy(_msg.type, MSG_TYPE_STATUS);
-        printToSerial("PWR - parsed CMD: ", cmd.c_str());
+        logToSerial("PWR - parsed CMD: ", cmd.c_str());
         OUT->put(_msg);
     }
 }
