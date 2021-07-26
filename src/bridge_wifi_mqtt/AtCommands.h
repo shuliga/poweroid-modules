@@ -37,5 +37,9 @@ private:
     const char **getInfo(char *result);
 
     const char **cmdSetOrGet(const char *cmd, const char *val, const char *result);
+
+    unsigned char setOrGetValue(unsigned char *_val, const unsigned char *new_val);
+
+    const char *processInt(const char *cmd, unsigned char &target);
 };
 #endif //POWEROID_MODULES_ATCOMMANDS_H

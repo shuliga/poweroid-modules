@@ -51,7 +51,8 @@ uint8_t splitStr(char *split, const char *src, const char divider) {
 uint8_t splitLines(char *lines) {
     uint8_t n = 1;
     uint8_t z = 0;
-    for (uint8_t i = 0; i < strlen(lines); i++) {
+    size_t len = strlen(lines);
+    for (size_t i = 0; i < len; i++) {
         if (lines[i] == '\r' || lines[i] == '\n') {
             lines[i] = '\0';
             z++;

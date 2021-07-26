@@ -44,12 +44,17 @@ void loadContext(Context &ctx) {
     unsigned long checksum;
     EEPROM.get(sizeof(ctx), checksum);
     EEPROM.end();
-    strcpy(ctx.uart.device_id, DEFAULT_PWR_DEVICE_ID);
-    ctx.uart.speed = uart_baud;
+    Serial.print("Checksum fetched: ");
+    Serial.print(checksum);
+    Serial.print("Hash calculated: ");
+    Serial.println(hash(ctx));
+
     if (checksum != hash(ctx)) {
         loadDefaultContext(ctx);
         Serial.println("Checksum error. Default context loaded.");
     }
+    strcpy(ctx.uart.device_id, DEFAULT_PWR_DEVICE_ID);
+    ctx.uart.speed = uart_baud;
 }
 
 size_t eepromSize(const Context &ctx) { return sizeof(ctx) + sizeof(long); }
@@ -64,10 +69,14 @@ void resetEepromContext(Context &ctx) {
 
 void storeContext(Context &ctx) {
     EEPROM.begin(eepromSize(ctx));
-    unsigned long checksum = hash(ctx);
+    unsigned long checksum= hash(ctx);
+    Serial.print("Config stored. Checksum: ");
+    Serial.println(checksum);
     EEPROM.put(0, ctx);
     EEPROM.put(sizeof(ctx), checksum);
     EEPROM.commit();
+    delay(500);
+    EEPROM.end();
 }
 
 void buildSubTopic(Context &ctx, const char *device_id) {

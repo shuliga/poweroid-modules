@@ -34,6 +34,9 @@ static const char* CMD_MQTT_ADDRESS="MQTT_ADDRESS";
 static const char* CMD_MQTT_CONNECTED="MQTT_CONNECTED";
 static const char* CMD_MQTT_CONNECT="MQTT_CONNECT";
 
+static const char* CMD_TOKEN_MODE="TOKEN_MODE";
+static const char* CMD_TOKEN_ID="TOKEN_ID";
+
 static const char* bool_values[2] = {"0", "1"};
 static bool bool_val;
 
@@ -64,6 +67,14 @@ const char **AtCommands::process(const char *atCommand) {
 
         if(startsWith(cmd, CMD_MASTER)){
             return cmdSet(CMD_MASTER, processBool(cmd, GLOBAL.flag.master));
+        }
+
+        if(startsWith(cmd, CMD_TOKEN_MODE)){
+            return cmdSet(CMD_TOKEN_MODE, processBool(cmd, GLOBAL.flag.tokenMode));
+        }
+
+        if(startsWith(cmd, CMD_TOKEN_ID)){
+            return cmdSet(CMD_TOKEN_ID, processInt(cmd, GLOBAL.flag.tokenId));
         }
 
         if(startsWith(cmd, CMD_CONNECT)){
@@ -194,6 +205,13 @@ const char* AtCommands::processBool(const char * cmd, bool & target){
     return bool_values[setOrGetValue(&target, val == NULL ? NULL : &bool_val)];
 }
 
+const char* AtCommands::processInt(const char * cmd, uint8_t & target){
+    const char * val = getValue(cmd);
+    uint8_t int_val = val == NULL ? 255 : atoi(val);
+    setOrGetValue(&target, val == NULL ? NULL : &int_val);
+    return val;
+}
+
 const char * AtCommands::getValue(const char * _cmd){
     char * v = strchr(_cmd, '=');
     return v == NULL ? NULL : v + 1;
@@ -204,11 +222,19 @@ AtCommands::AtCommands(Context *ctx) : ctx(ctx) {}
 const char * AtCommands::setOrGetCtxValue(char *ctx_val, const char *value, uint8_t length) {
     if (value != NULL){
         strncpy(ctx_val, value, length);
+        ctx_val[length] = '\0';
     }
     return ctx_val;
 }
 
 bool AtCommands::setOrGetValue(bool *_val, const bool * new_val) {
+    if (new_val != NULL){
+        *_val = *new_val;
+    }
+    return *_val;
+}
+
+uint8_t AtCommands::setOrGetValue(uint8_t *_val, const uint8_t * new_val) {
     if (new_val != NULL){
         *_val = *new_val;
     }

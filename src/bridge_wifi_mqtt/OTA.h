@@ -14,14 +14,17 @@ class OTA {
 
 public:
 
-    explicit OTA(WiFiClient &client): _client(client) {
+    explicit OTA(WiFiClientSecure &client): _client(client) {
     };
 
     const char* install(const char * url);
     void apply();
 
+    int connect(char *host);
+
 private:
-    WiFiClient _client;
+    WiFiClientSecure _client;
+
 };
 
 

@@ -40,6 +40,8 @@ struct Flag {
     bool wifiTryConnect = true;
     bool verbose = false;
     bool master = true;
+    bool tokenMode = false;
+    uint8_t tokenId = 0;
 };
 
 struct Global {

@@ -4,6 +4,7 @@
 
 #include <Arduino.h>
 #include <ESP8266WiFi.h>
+#include <WiFiClientSecure.h>
 #include <PubSubClient.h>
 #include "Global.h"
 #include "Context.h"
@@ -32,9 +33,10 @@ Context CTX;
 CircularBuffer<ParserModel> IN, OUT;
 
 WiFiClient wclient;
+WiFiClientSecure wsclient;
 PubSubClient mqttClient(wclient);
 
-OTA ota(wclient);
+OTA ota(wsclient);
 
 AtCommands AT(&CTX);
 PoweroidProcessor pwrProcessor(&IN, &OUT, &CTX);
