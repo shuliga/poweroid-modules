@@ -41,5 +41,9 @@ private:
     unsigned char setOrGetValue(unsigned char *_val, const unsigned char *new_val);
 
     const char *processInt(const char *cmd, unsigned char &target);
+
+    const char *processLong(const char *cmd, long &target);
+
+    long setOrGetValue(long *_val, const long *new_val);
 };
 #endif //POWEROID_MODULES_ATCOMMANDS_H

@@ -5,9 +5,11 @@
 #ifndef POWEROID_MODULES_CONTEXT_H
 #define POWEROID_MODULES_CONTEXT_H
 
+#include "stdint.h"
+
 #define DEFAULT_PWR_DEVICE_ID "PWR-null"
 
-#define CTX_LEN_DEVICE_ID 24
+#define CTX_LEN_DEVICE_ID 28
 
 #define CTX_LEN_MQTT_PASS 16
 #define CTX_LEN_MQTT_USER 32
@@ -19,6 +21,8 @@
 
 #define CTX_LEN_WIFI_PASS 16
 #define CTX_LEN_WIFI_SSID 16
+
+#define CTX_LEN_UART_TOKEN 1
 
 
 struct MqttContext {
@@ -41,6 +45,7 @@ struct WiFiContext {
 struct UartContext {
     char device_id[CTX_LEN_DEVICE_ID + 1];
     long speed;
+    uint8_t token;
     long retry_timeout;
 };
 
@@ -56,8 +61,9 @@ void loadDefaultContext(Context &ctx);
 void storeContext(Context &ctx);
 void loadContext(Context &ctx);
 void resetEepromContext(Context &ctx);
-void buildSubTopic(Context &ctx, const char * device_id);
-void buildPubTopic(Context &ctx, const char * device_id);
+void buildSubTopic(Context &ctx, const char * module_id);
+void buildPubTopic(Context &ctx, const char * module_id);
 unsigned long hash(Context &ctx);
+void resetUartDeviceId(Context &ctx);
 
 #endif //POWEROID_MODULES_CONTEXT_H

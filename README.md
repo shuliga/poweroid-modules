@@ -27,7 +27,8 @@ _(~) marks persistent variable_
 ##### UART
 * `UART_INFO` displays UART variables and information
 * `UART_DEVICE_ID` displays UART device id, _PWR-null_ id no device connected
-* `UART_BAUD` displays UART baud speed
+* `CMD_UART_BAUD` displays UART baud speed
+* `UART_TOKEN` =_<0-9>_  UART token, selects one from devices that share the same channel. 0 - disables tokens.  
 
 ##### WiFi
 * `WIFI_INFO` displays WiFi variables and status
@@ -52,20 +53,20 @@ _(~) marks persistent variable_
 ## MQTT Topics
 ### Bridge Module
 ##### Publishes
-* `<service>/<customer>/<address>/PWR-BMU-1/init` — responds with init information on startup: \<attached device name\>, \<datetime\> 
+* `<service>/<customer>/<address>/PWR-BMU-1/init` — responds with init information on startup: \<token\>_\<attached device name\>, \<datetime\> 
 * `<service>/<customer>/<address>/PWR-BMU-1/health` — responds with _'OK'_ on health check message
 ##### Subscribes
 * `<service>/<customer>/<address>/PWR-BMU-1/#` see **Mode** for details on subsequent path
 ######Mode
-* `<exec-at>` — silently executes AT commands, passed in payload, limited to 512 bytes 
-* `<ota>` — tries to download binary update from https url, passed in payload; updates sketch on success; restarts 
-* `<health>`  — health check input trigger
+* `exec-at` — silently executes AT commands, passed in payload, limited to 512 bytes 
+* `ota` — tries to download binary update from https url, passed in payload; updates sketch on success; restarts 
+* `health`  — health check input trigger
 ### Bridge Module on Behalf of Attached Poweroid Device
 ##### Publishes
-* `<service>/<customer>/<address>/<device>/raw-out` — output of raw incoming UART data
-* `<service>/<customer>/<address>/<device>/<mode>/<path...>` — parsed responses from UART Poweroid device
+* `<service>/<customer>/<address>/[token/]<device>/raw-out` — output of raw incoming UART data
+* `<service>/<customer>/<address>/[token/]<device>/<mode>/<path...>` — parsed responses from UART Poweroid device
 ##### Subscribes
-* `<service>/<customer>/<address>/<device>/#`  see **Mode** for details on subsequent path
+* `<service>/<customer>/<address>/[token/]<device>/#`  see **Mode** for details on subsequent path
 ######Mode
-`raw-in`— direct input of Poweroid commands, is passed to UART
-`cmd`— execute command (_set_ or _get_ actions), subsequent path and payload is converted to form Poweroid command and pass it to UART
+* `raw-in`— direct input of Poweroid commands, is passed to UART
+* `cmd`— execute command (_set_ or _get_ actions, _disarm_), subsequent path and payload are converted to the Poweroid command and passed to UART

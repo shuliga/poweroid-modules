@@ -15,7 +15,8 @@ static const char* CMD_MASTER="MASTER";
 
 static const char* CMD_UART_INFO="UART_INFO";
 static const char* UART_DEVICE_ID="UART_DEVICE_ID";
-static const char* UART_BAUD="UART_BAUD";
+static const char* CMD_UART_BAUD="UART_BAUD";
+static const char* CMD_UART_TOKEN="UART_TOKEN";
 
 static const char* CMD_WIFI_INFO="WIFI_INFO";
 static const char* CMD_WIFI_SSID="WIFI_SSID";
@@ -33,9 +34,6 @@ static const char* CMD_MQTT_CUSTOMER="MQTT_CUSTOMER";
 static const char* CMD_MQTT_ADDRESS="MQTT_ADDRESS";
 static const char* CMD_MQTT_CONNECTED="MQTT_CONNECTED";
 static const char* CMD_MQTT_CONNECT="MQTT_CONNECT";
-
-static const char* CMD_TOKEN_MODE="TOKEN_MODE";
-static const char* CMD_TOKEN_ID="TOKEN_ID";
 
 static const char* bool_values[2] = {"0", "1"};
 static bool bool_val;
@@ -69,12 +67,13 @@ const char **AtCommands::process(const char *atCommand) {
             return cmdSet(CMD_MASTER, processBool(cmd, GLOBAL.flag.master));
         }
 
-        if(startsWith(cmd, CMD_TOKEN_MODE)){
-            return cmdSet(CMD_TOKEN_MODE, processBool(cmd, GLOBAL.flag.tokenMode));
+        if(startsWith(cmd, CMD_UART_TOKEN)){
+            GLOBAL.cmd.updateToken = true;
+            return cmdSet(CMD_UART_TOKEN, processInt(cmd, ctx->uart.token));
         }
 
-        if(startsWith(cmd, CMD_TOKEN_ID)){
-            return cmdSet(CMD_TOKEN_ID, processInt(cmd, GLOBAL.flag.tokenId));
+        if(startsWith(cmd, CMD_UART_BAUD)){
+            return cmdSet(CMD_UART_TOKEN, processLong(cmd, ctx->uart.speed));
         }
 
         if(startsWith(cmd, CMD_CONNECT)){
@@ -90,14 +89,16 @@ const char **AtCommands::process(const char *atCommand) {
         }
 
         if(startsWith(cmd, CMD_UART_INFO)){
-            const uint8_t size  =
-                    16 +
-                    7 +
-                    2*3+1;
+            const uint8_t size =
+                    24 + 14 +
+                    7 + 9 +
+                    1 + 10 +
+                    3*3+1;
             static char info[size];
-            sprintf(info, "%s: %s\n%s: %lu",
-                    CMD_WIFI_SSID, ctx->uart.device_id,
-                    CMD_WIFI_PASS, ctx->uart.speed
+            sprintf(info, "%s: %s\n%s: %lu\n%s: %d\n",
+                    UART_DEVICE_ID, ctx->uart.device_id,
+                    CMD_UART_BAUD, ctx->uart.speed,
+                    CMD_UART_TOKEN, ctx->uart.token
             );
             return getInfo(info);
         }
@@ -212,6 +213,13 @@ const char* AtCommands::processInt(const char * cmd, uint8_t & target){
     return val;
 }
 
+const char* AtCommands::processLong(const char * cmd, long & target){
+    const char * val = getValue(cmd);
+    long long_val = val == NULL ? 0 : atol(val);
+    setOrGetValue(&target, val == NULL ? NULL : &long_val);
+    return val;
+}
+
 const char * AtCommands::getValue(const char * _cmd){
     char * v = strchr(_cmd, '=');
     return v == NULL ? NULL : v + 1;
@@ -235,6 +243,13 @@ bool AtCommands::setOrGetValue(bool *_val, const bool * new_val) {
 }
 
 uint8_t AtCommands::setOrGetValue(uint8_t *_val, const uint8_t * new_val) {
+    if (new_val != NULL){
+        *_val = *new_val;
+    }
+    return *_val;
+}
+
+long AtCommands::setOrGetValue(long *_val, const long * new_val) {
     if (new_val != NULL){
         *_val = *new_val;
     }

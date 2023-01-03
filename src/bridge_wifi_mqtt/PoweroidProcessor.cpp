@@ -28,8 +28,8 @@ unsigned char PoweroidProcessor::testBannerAndUpdateCnt(const String &cmd) {
 void PoweroidProcessor::processIn() const {
     if (!this->IN->isEmpty()) {
         ParserModel *msg = this->IN->poll();
-        bool isRaw = strcmp(msg->type, MSG_TYPE_RAW_IN) == 0;
-        logToSerial("PWR - sending IN msg: ", msg->type, "/", isRaw ? msg->value : msg->subject);
+        bool isRaw = strcmp(msg->mode, MSG_MODE_RAW_IN) == 0;
+        logToSerial("PWR - sending IN msg: ", msg->mode, "/", isRaw ? msg->value : msg->subject);
         char parsed[MODEL_VAL_LENGTH];
         if (isRaw) {
             Serial.println(msg->value);
@@ -43,14 +43,14 @@ void PoweroidProcessor::processIn() const {
 
 void PoweroidProcessor::outputParsedMessage(String &cmd, ParserModel &_msg) {
     if (PWR_Parser.parseOut(cmd, _msg)) {
-        strcpy(_msg.type, MSG_TYPE_STATUS);
+        strcpy(_msg.mode, MSG_TYPE_STATUS);
         logToSerial("PWR - parsed CMD: ", cmd.c_str());
         OUT->put(_msg);
     }
 }
 
 void PoweroidProcessor::outputRawMessage(const char *_cmd, ParserModel &_rawMsg) {
-    strcpy(_rawMsg.type, MSG_TYPE_OUT);
+    strcpy(_rawMsg.mode, MSG_TYPE_OUT);
     _rawMsg.subject[0] = '\0';
     _rawMsg.idx = 0;
     strcpy(_rawMsg.value, _cmd);

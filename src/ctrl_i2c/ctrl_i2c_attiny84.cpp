@@ -2,7 +2,7 @@
 // Created by SHL on 07.12.2020.
 //
 
-const char *DEVICE_ID = "PWM-BMU-01"; // Poweroid module, Controller I2C
+const char *MODULE_ID = "PWM-CTRL-04"; // Poweroid module, Controller I2C
 char DEVICE_ADDR = 0x25;
 
 #define I2C_SLAVE_ADDR 0x25

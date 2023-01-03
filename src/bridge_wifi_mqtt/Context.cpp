@@ -7,7 +7,7 @@
 #include "Context.h"
 #include "ParserConstants.h"
 
-const char *service = "rent";
+const char *service = "test";
 const char *customer = "test-customer";
 
 // Address pattern: <country code #2>-<City code #2>-<postal code>-<street code #2>-<building no.>-<apt. no.>
@@ -17,13 +17,13 @@ const char *ssid = "SHL-Net-2";
 const char *pass = "76543210";
 
 const char *mqtt_server = "mqtt.poweroid.io";
-const char *mqtt_port = "12674";
+const char *mqtt_port = "1883";
 const char *mqtt_user = "thermo-01";
 const char *mqtt_pass = "ThermoPass";
+const int uart_baud = 115200;
 
 size_t eepromSize(const Context &ctx);
 
-const int uart_baud = 115200;
 
 void loadDefaultContext(Context &ctx) {
     strcpy(ctx.mqtt.service, service);
@@ -36,6 +36,9 @@ void loadDefaultContext(Context &ctx) {
 
     strcpy(ctx.wifi.ssid, ssid);
     strcpy(ctx.wifi.pass, pass);
+
+    ctx.uart.speed = uart_baud;
+    ctx.uart.token = 0;
 }
 
 void loadContext(Context &ctx) {
@@ -45,7 +48,7 @@ void loadContext(Context &ctx) {
     EEPROM.get(sizeof(ctx), checksum);
     EEPROM.end();
     Serial.print("Checksum fetched: ");
-    Serial.print(checksum);
+    Serial.println(checksum);
     Serial.print("Hash calculated: ");
     Serial.println(hash(ctx));
 
@@ -53,9 +56,11 @@ void loadContext(Context &ctx) {
         loadDefaultContext(ctx);
         Serial.println("Checksum error. Default context loaded.");
     }
-    strcpy(ctx.uart.device_id, DEFAULT_PWR_DEVICE_ID);
-    ctx.uart.speed = uart_baud;
+    resetUartDeviceId(ctx);
+    GLOBAL.cmd.updateToken = ctx.uart.token > 0;
 }
+
+void resetUartDeviceId(Context &ctx) { strcpy(ctx.uart.device_id, DEFAULT_PWR_DEVICE_ID); }
 
 size_t eepromSize(const Context &ctx) { return sizeof(ctx) + sizeof(long); }
 
@@ -79,14 +84,14 @@ void storeContext(Context &ctx) {
     EEPROM.end();
 }
 
-void buildSubTopic(Context &ctx, const char *device_id) {
+void buildSubTopic(Context &ctx, const char *module_id) {
     sprintf(GLOBAL.topics.prefix, "%s/%s/%s", ctx.mqtt.service, ctx.mqtt.customer, ctx.mqtt.address);
-    sprintf(GLOBAL.topics.sub_uart_topic, "%s/%s/#", GLOBAL.topics.prefix, ctx.uart.device_id);
-    sprintf(GLOBAL.topics.sub_device_topic, "%s/%s/#", GLOBAL.topics.prefix, device_id);
+    sprintf(GLOBAL.topics.sub_uart_device_topic, "%s/%s/#", GLOBAL.topics.prefix, ctx.uart.device_id);
+    sprintf(GLOBAL.topics.sub_module_topic, "%s/%s/#", GLOBAL.topics.prefix, module_id);
 }
 
-void buildPubTopic(Context &ctx, const char * device_id) {
-    sprintf(GLOBAL.topics.pub_topic, "%s/%s", GLOBAL.topics.prefix, device_id && strlen(device_id) > 0 ?  device_id : ctx.uart.device_id);
+void buildPubTopic(Context &ctx, const char * module_id) {
+    sprintf(GLOBAL.topics.pub_topic, "%s/%s", GLOBAL.topics.prefix, module_id && strlen(module_id) > 0 ? module_id : ctx.uart.device_id);
 }
 
 unsigned long hash(byte *data, unsigned long size) {

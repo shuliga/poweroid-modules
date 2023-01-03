@@ -10,9 +10,10 @@
 struct Cmd {
     bool subscribe = false;
     bool initiate = false;
-    bool wifiConnected = false;
-    bool uartConnected = false;
-    bool mqttConnected = false;
+    bool wifiConnect = false;
+    bool uartConnect = false;
+    bool mqttConnect = false;
+    bool updateToken = false;
 };
 
 struct Status {
@@ -21,6 +22,7 @@ struct Status {
     bool mqttConnected = false;
     bool mqttDisconnectLatch = false;
     bool initiated = false;
+    bool tokenResponded = false;
     unsigned long counter_2Hz = 0;
     bool timer_5s = false;
     bool timer_2_5s = false;
@@ -30,8 +32,8 @@ struct Status {
 struct Topics {
     char prefix[GLOBAL_LEN_TOPIC + 1];
     char pub_topic[GLOBAL_LEN_TOPIC + 1];
-    char sub_uart_topic[GLOBAL_LEN_TOPIC + 1];
-    char sub_device_topic[GLOBAL_LEN_TOPIC + 1];
+    char sub_uart_device_topic[GLOBAL_LEN_TOPIC + 1];
+    char sub_module_topic[GLOBAL_LEN_TOPIC + 1];
 };
 
 struct Flag {
@@ -40,8 +42,6 @@ struct Flag {
     bool wifiTryConnect = true;
     bool verbose = false;
     bool master = true;
-    bool tokenMode = false;
-    uint8_t tokenId = 0;
 };
 
 struct Global {

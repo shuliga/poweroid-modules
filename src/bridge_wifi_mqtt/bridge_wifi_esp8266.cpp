@@ -20,7 +20,7 @@
 
 #define LED 2
 
-const char *DEVICE_ID = "PWM-BMU-01"; // Poweroid module, Bridge MQTT-UART
+const char *MODULE_ID = "PWM-BMU-01"; // Poweroid module, Bridge MQTT-UART
 char DEVICE_ID_MAC[34];
 char DEVICE_ID_ADDR[64];
 
@@ -69,12 +69,12 @@ void mqtt_callback(char *topic, uint8_t *payload, unsigned int length) {
 void loadContext() {
     Serial.println("Loading context");
     loadContext(CTX);
-    buildSubTopic(CTX, DEVICE_ID);
+    buildSubTopic(CTX, MODULE_ID);
 }
 
 void printMQTTInfo() {
-    Serial.printf("Subscribed to MQTT UART device path: %s\r\n", GLOBAL.topics.sub_uart_topic);
-    Serial.printf("Subscribed to MQTT Bridge device path: %s\r\n", GLOBAL.topics.sub_device_topic);
+    Serial.printf("Subscribed to MQTT UART device path: %s\r\n", GLOBAL.topics.sub_uart_device_topic);
+    Serial.printf("Subscribed to MQTT Bridge device path: %s\r\n", GLOBAL.topics.sub_module_topic);
 }
 
 void sendInitMessage(const char *device_id) {
@@ -82,8 +82,8 @@ void sendInitMessage(const char *device_id) {
     char timestmp[20];
     TIME.getTimestamp(timestmp);
     sprintf(initMsg.value, "%s, %s", device_id, timestmp);
-    strcpy(initMsg.type, MSG_TYPE_INIT);
-    strcpy(initMsg.device, DEVICE_ID);
+    strcpy(initMsg.mode, MSG_TYPE_INIT);
+    strcpy(initMsg.device, MODULE_ID);
     initMsg.retained = true;
     OUT.put(initMsg);
 }
@@ -108,12 +108,12 @@ bool wiFiReconnect() {
         WiFi.begin(CTX.wifi.ssid, CTX.wifi.pass);
         int8_t connect_status = WiFi.waitForConnectResult();
         if (connect_status == WL_CONNECTED) {
-            GLOBAL.cmd.wifiConnected = true;
+            GLOBAL.cmd.wifiConnect = true;
             GLOBAL.status.wifiConnected = true;
             String mac = WiFi.macAddress();
             mac.replace(":", "-");
-            sprintf(DEVICE_ID_MAC, "%s-%s", DEVICE_ID, mac.c_str());
-            sprintf(DEVICE_ID_ADDR, "%s-%s", DEVICE_ID, CTX.mqtt.address);
+            sprintf(DEVICE_ID_MAC, "%s-%s", MODULE_ID, mac.c_str());
+            sprintf(DEVICE_ID_ADDR, "%s-%s", MODULE_ID, CTX.mqtt.address);
             Serial.println("WiFi connected");
         } else {
             GLOBAL.status.wifiConnected = false;
@@ -124,10 +124,23 @@ bool wiFiReconnect() {
                 Serial.printf("WiFi connect FAILED: %d\n", connect_status);
             }
         }
-        return GLOBAL.cmd.wifiConnected;
+        return GLOBAL.cmd.wifiConnect;
     } else {
         return false;
     }
+}
+
+bool processToken(uint8_t token) {
+    while (Serial.available())
+        Serial.read();
+    Serial.print("pass_token:");
+    Serial.println(token);
+    Serial.flush();
+    String resp = Serial.readStringUntil('\n');
+    if (resp.length() > 0 && resp.startsWith("pass_token") && resp.indexOf('>') > 0) {
+        return true;
+    }
+    return false;
 }
 
 void processAT(const char *at_cmd) {
@@ -144,7 +157,12 @@ bool processDeviceId() {
     Serial.flush();
     String resp = Serial.readStringUntil('\n');
     if (resp.length() > 0 && resp.startsWith("get_ver") && resp.indexOf('>') > 0) {
-        String ver = resp.substring(resp.indexOf('>') + 2);
+        String ver = "";
+        if (CTX.uart.token > 0){
+            ver.concat(CTX.uart.token);
+            ver.concat('/');
+        }
+        ver.concat(resp.substring(resp.indexOf('>') + 2));
         ver.replace(' ', '_');
         ver.replace('+', '_');
         ver.replace('#', '_');
@@ -157,13 +175,33 @@ bool processDeviceId() {
     return false;
 }
 
-void processCommand() {
-
+void processUartDevice() {
+    if (GLOBAL.cmd.updateToken && GLOBAL.status.timer_2_5s) {
+        GLOBAL.status.uartConnected = false;
+        GLOBAL.flag.master = false;
+        if (CTX.uart.token == 0) {
+            processToken(CTX.uart.token);
+            GLOBAL.cmd.updateToken = false;
+            GLOBAL.flag.master = true;
+            resetUartDeviceId(CTX);
+            GLOBAL.cmd.uartConnect = true;
+            return;
+        } else {
+            if(processToken(CTX.uart.token)){
+                GLOBAL.cmd.updateToken = false;
+                GLOBAL.flag.master = true;
+            }
+        }
+    }
     if (GLOBAL.flag.master && GLOBAL.status.wifiConnected && !GLOBAL.status.uartConnected && GLOBAL.status.timer_5s) {
         GLOBAL.status.uartConnected = processDeviceId();
-        GLOBAL.cmd.uartConnected = GLOBAL.status.uartConnected;
+        GLOBAL.cmd.uartConnect = GLOBAL.status.uartConnected;
         return;
     }
+}
+
+
+void processCommand() {
 
     if (Serial.available()) {
         String cmd = Serial.readStringUntil('\n');
@@ -181,7 +219,7 @@ void processCommand() {
 }
 
 void processInternal() {
-    if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_EXEC_AT) == 0) {
+    if (!IN.isEmpty() && strcmp(IN.peek()->mode, MSG_MODE_EXEC_AT) == 0) {
         ParserModel *atIn = IN.poll();
         uint8_t total_len = strlen(atIn->value);
         uint8_t cursor = 0;
@@ -195,23 +233,23 @@ void processInternal() {
         }
         return;
     }
-    if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_HEALTH) == 0) {
+    if (!IN.isEmpty() && strcmp(IN.peek()->mode, MSG_MODE_HEALTH) == 0) {
         ParserModel healthMsg;
-        strcpy(healthMsg.type, MSG_TYPE_HEALTH );
+        strcpy(healthMsg.mode, MSG_MODE_HEALTH );
         strcpy(healthMsg.subject, SUBJ_RESPONSE);
-        strcpy(healthMsg.device, DEVICE_ID);
+        strcpy(healthMsg.device, MODULE_ID);
         strcpy(healthMsg.value, "Health - OK");
         healthMsg.retained = false;
         OUT.put(healthMsg);
         return;
     }
 
-    if (!IN.isEmpty() && strcmp(IN.peek()->type, MSG_TYPE_OTA) == 0) {
+    if (!IN.isEmpty() && strcmp(IN.peek()->mode, MSG_MODE_OTA) == 0) {
         ParserModel *otaIn = IN.poll();
         const char * res = ota.install(otaIn->value);
         ParserModel otaMsg;
-        strcpy(otaMsg.type, MSG_TYPE_OTA);
-        strcpy(otaMsg.device, DEVICE_ID);
+        strcpy(otaMsg.mode, MSG_MODE_OTA);
+        strcpy(otaMsg.device, MODULE_ID);
         strcpy(otaMsg.subject, SUBJ_RESPONSE);
         strcpy(otaMsg.value, res);
         otaMsg.retained = false;
@@ -249,11 +287,11 @@ void processMqtt(PubSubClient &client) {
 }
 
 void mqttSubscribe(PubSubClient &client) {
-    client.unsubscribe(GLOBAL.topics.sub_device_topic);
-    client.unsubscribe(GLOBAL.topics.sub_uart_topic);
-    buildSubTopic(CTX, DEVICE_ID);
-    client.subscribe(GLOBAL.topics.sub_device_topic);
-    client.subscribe(GLOBAL.topics.sub_uart_topic);
+    client.unsubscribe(GLOBAL.topics.sub_module_topic);
+    client.unsubscribe(GLOBAL.topics.sub_uart_device_topic);
+    buildSubTopic(CTX, MODULE_ID);
+    client.subscribe(GLOBAL.topics.sub_module_topic);
+    client.subscribe(GLOBAL.topics.sub_uart_device_topic);
     printMQTTInfo();
 }
 
@@ -284,16 +322,16 @@ void testConnect() {
 }
 
 void syncTimeAndStates() {
-    if (GLOBAL.cmd.wifiConnected) {
+    if (GLOBAL.cmd.wifiConnect) {
         TIME.begin();
-        GLOBAL.cmd.wifiConnected = false;
+        GLOBAL.cmd.wifiConnect = false;
     }
 
     if (GLOBAL.status.wifiConnected && GLOBAL.status.mqttConnected) {
-        if (GLOBAL.cmd.uartConnected || GLOBAL.cmd.mqttConnected) {
+        if (GLOBAL.cmd.uartConnect || GLOBAL.cmd.mqttConnect) {
             GLOBAL.cmd.subscribe = true;
-            GLOBAL.cmd.uartConnected = false;
-            GLOBAL.cmd.mqttConnected = false;
+            GLOBAL.cmd.uartConnect = false;
+            GLOBAL.cmd.mqttConnect = false;
         }
     }
 
@@ -311,7 +349,7 @@ void syncTimeAndStates() {
 
 void initBt() {
     Serial.printf("Testing BT connection at %ld\n", CTX.uart.speed);
-    BluetoothHC05 BT(DEVICE_ID);
+    BluetoothHC05 BT(MODULE_ID);
     BT.begin(CTX.uart.speed);
     digitalWrite(LED, BT.isInAt() ? LOW : HIGH);
     bool proceedLink = BT.isHC05inAT();
@@ -365,8 +403,9 @@ void setup() {
     mqttClient.setServer(CTX.mqtt.host, atoi(CTX.mqtt.port));
     mqttClient.setCallback(mqtt_callback);
 
+    Serial.printf("Flash size: %u\n", ESP.getFlashChipRealSize());
     Serial.printf("Sketch size: %u\n", ESP.getSketchSize());
-    Serial.printf("Free size: %u\n", ESP.getFreeSketchSpace());
+    Serial.printf("Free sketch space: %u\n", ESP.getFreeSketchSpace());
     Serial.println("Bridge started");
     cleanSerial();
 
@@ -376,7 +415,7 @@ void setup() {
 
 void loop() {
     testConnect();
-
+    processUartDevice();
     processCommand();
 
     if (
