@@ -53,14 +53,17 @@ _(~) marks persistent variable_
 ## MQTT Topics
 ### Bridge Module
 ##### Publishes
-* `<service>/<customer>/<address>/PWR-BMU-1/init` — responds with init information on startup: \<token\>_\<attached device name\>, \<datetime\> 
-* `<service>/<customer>/<address>/PWR-BMU-1/health` — responds with _'OK'_ on health check message
+* `<service>/<customer>/<address>/PWR-BMU-01/init` — responds with init information on startup: \<token\>_\<attached device name\>, \<datetime\> 
+* `<service>/<customer>/<address>/PWR-BMU-01/health` — responds with _'OK'_ on health check message
 ##### Subscribes
-* `<service>/<customer>/<address>/PWR-BMU-1/#` see **Mode** for details on subsequent path
+* `<service>/<customer>/<address>/PWR-BMU-01/#` see **Mode** for details on subsequent path
 ###### Mode
 * `exec-at` — silently executes AT commands, passed in payload, limited to 512 bytes 
 * `ota` — tries to download binary update from https url, passed in payload; updates sketch on success; restarts 
 * `health`  — health check input trigger
+
+***Sample:*** _path_: `rental/best-customer/ua-lv-70000-st-1-1/PWR-BMU-01/exec-at`; _values:_ `AT+MQTT_CUSTOMER=new_user_1`, `AT+PERSIST`
+
 ### Bridge Module on Behalf of Attached Poweroid Device
 ##### Publishes
 * `<service>/<customer>/<address>/[token/]<device>/raw-out` — output of raw incoming UART data
@@ -70,5 +73,3 @@ _(~) marks persistent variable_
 ###### Mode
 * `raw-in`— direct input of Poweroid commands, is passed to UART
 * `cmd`— execute command (_set_ or _get_ actions, _disarm_), subsequent path and payload are converted to the Poweroid command and passed to UART
-
-Samples: `AT+MQTT_CUSTOMER=new_user_1`, `AT+PERSIST`
