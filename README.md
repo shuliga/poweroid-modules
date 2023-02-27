@@ -62,7 +62,7 @@ _(~) marks persistent variable_
 * `ota` — tries to download binary update from https url, passed in payload; updates sketch on success; restarts 
 * `health`  — health check input trigger
 
-***Sample:*** _path_: `rental/best-customer/ua-lv-70000-st-1-1/PWR-BMU-01/exec-at`; _values:_ `AT+MQTT_CUSTOMER=new_user_1`, `AT+PERSIST`
+***Sample, publish to execute AT command:*** _path_: `rental/best-customer/ua-lv-70000-st-1-1/PWR-BMU-01/exec-at`; _values:_ `AT+MQTT_CUSTOMER=new_user_1`, `AT+PERSIST`
 
 ### Bridge Module on Behalf of Attached Poweroid Device
 ##### Publishes
