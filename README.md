@@ -57,7 +57,7 @@ _(~) marks persistent variable_
 * `<service>/<customer>/<address>/PWR-BMU-1/health` — responds with _'OK'_ on health check message
 ##### Subscribes
 * `<service>/<customer>/<address>/PWR-BMU-1/#` see **Mode** for details on subsequent path
-######Mode
+###### Mode
 * `exec-at` — silently executes AT commands, passed in payload, limited to 512 bytes 
 * `ota` — tries to download binary update from https url, passed in payload; updates sketch on success; restarts 
 * `health`  — health check input trigger
@@ -67,6 +67,7 @@ _(~) marks persistent variable_
 * `<service>/<customer>/<address>/[token/]<device>/<mode>/<path...>` — parsed responses from UART Poweroid device
 ##### Subscribes
 * `<service>/<customer>/<address>/[token/]<device>/#`  see **Mode** for details on subsequent path
-######Mode
+###### Mode
 * `raw-in`— direct input of Poweroid commands, is passed to UART
 * `cmd`— execute command (_set_ or _get_ actions, _disarm_), subsequent path and payload are converted to the Poweroid command and passed to UART
+Samples: `AT+MQTT_CUSTOMER=new_user_1`, `AT+PERSIST`
