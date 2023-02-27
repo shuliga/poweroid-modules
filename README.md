@@ -70,4 +70,5 @@ _(~) marks persistent variable_
 ###### Mode
 * `raw-in`— direct input of Poweroid commands, is passed to UART
 * `cmd`— execute command (_set_ or _get_ actions, _disarm_), subsequent path and payload are converted to the Poweroid command and passed to UART
+
 Samples: `AT+MQTT_CUSTOMER=new_user_1`, `AT+PERSIST`
